@@ -869,17 +869,24 @@
     }
 
     function wipeData() {
-        if(confirm("Are you sure you want to delete all your progress and history data?")) {
+        if(confirm("Are you sure you want to reset the deck and filters? (Your word tracking statistics will be kept safe)")) {
+            // Save current stats
+            const savedStats = JSON.parse(JSON.stringify(wordStats));
+            
             localStorage.removeItem(cacheKey);
             currentIndex = 0;
-            wordStats = {};
+            wordStats = savedStats; // Restore stats
             enabledTerms = flashcards.map(c => c.term);
             shuffleDeck();
             setCardDirection();
             resetTestUI();
             updateUI();
+            saveProgress();
+            
             if (currentTab === 'stats') populateHistoryTable();
             if (currentTab === 'filter') renderFilterUI();
+            
+            alert("Deck and filters wiped, but tracking stats are preserved!");
         }
     }
 
