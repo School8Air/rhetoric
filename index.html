@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Omnibus Flashcards</title>
+    <title>Rhetoric Flashcards</title>
     <style>
         :root {
             --glass-bg: rgba(255, 255, 255, 0.1);
@@ -184,7 +184,7 @@
 <div class="container">
     <div class="glass-panel">
         <header>
-            <h2 style="margin: 0;">Omnibus Review</h2>
+            <h2 style="margin: 0;">Rhetoric Review</h2>
             <div class="controls">
                 <select id="mode-select" onchange="changeMode()">
                     <option value="learn">Learn Mode</option>
@@ -224,7 +224,6 @@
 </div>
 
 <script>
-    // Complete Figure of Speech Dataset extracted from Appendix A
     const flashcards = [
         { term: "Absolute ellipsis", def: "A phrase or sentence in which the omitted material is not betrayed by the words which remain." },
         { term: "Anadiplosis", def: "Repetition of an end at the next beginning." },
@@ -288,9 +287,8 @@
     ];
 
     let currentIndex = 0;
-    const cacheKey = 'omnibus_flashcard_progress';
+    const cacheKey = 'rhetoric_flashcard_progress';
 
-    // DOM Elements
     const cardFront = document.getElementById('card-front');
     const cardBack = document.getElementById('card-back');
     const flashcard = document.getElementById('flashcard');
@@ -304,13 +302,11 @@
     const progressBar = document.getElementById('progress-bar');
     const progressText = document.getElementById('progress-text');
 
-    // Initialize App
     function init() {
         loadProgress();
         updateUI();
     }
 
-    // Save & Load from Browser Cache (localStorage)
     function saveProgress() {
         const state = {
             index: currentIndex,
@@ -338,7 +334,6 @@
         testInput.value = "";
     }
 
-    // UI Updates
     function updateUI() {
         flashcard.classList.remove('is-flipped');
         const card = flashcards[currentIndex];
@@ -347,20 +342,18 @@
         cardFront.textContent = isTermToDef ? card.term : card.def;
         cardBack.textContent = isTermToDef ? card.def : card.term;
 
-        // Progress formatting
         const percent = ((currentIndex + 1) / flashcards.length) * 100;
         progressBar.style.width = `${percent}%`;
         progressText.textContent = `Card ${currentIndex + 1} of ${flashcards.length}`;
 
-        // Toggle Views
         if (modeSelect.value === 'learn') {
             learnUI.style.display = 'flex';
             testUI.style.display = 'none';
-            cardContainer.style.pointerEvents = 'auto'; // allow flipping
+            cardContainer.style.pointerEvents = 'auto'; 
         } else {
             learnUI.style.display = 'none';
             testUI.style.display = 'block';
-            cardContainer.style.pointerEvents = 'none'; // disable clicking to cheat
+            cardContainer.style.pointerEvents = 'none'; 
             testInput.value = '';
             testInput.focus();
             testFeedback.textContent = '';
@@ -368,7 +361,6 @@
         saveProgress();
     }
 
-    // Interactions
     function flipCard() {
         if (modeSelect.value === 'learn') {
             flashcard.classList.toggle('is-flipped');
@@ -396,13 +388,11 @@
         if (e.key === 'Enter') checkAnswer();
     }
 
-    // Basic String comparison for Test Mode
     function checkAnswer() {
         const isTermToDef = dirSelect.value === 'term-def';
         const correctAnswer = isTermToDef ? flashcards[currentIndex].def : flashcards[currentIndex].term;
         const userAnswer = testInput.value.trim().toLowerCase();
         
-        // Remove punctuation for looser grading on definitions
         const cleanCorrect = correctAnswer.toLowerCase().replace(/[.,\/#!$%\^&\*;:{}=\-_`~()]/g,"");
         const cleanUser = userAnswer.replace(/[.,\/#!$%\^&\*;:{}=\-_`~()]/g,"");
 
@@ -420,7 +410,6 @@
         }
     }
 
-    // Boot
     init();
 </script>
 </body>
