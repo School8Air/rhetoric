@@ -84,7 +84,7 @@
             cursor: pointer;
             outline: none;
             backdrop-filter: blur(5px);
-            transition: background 0.3s ease;
+            transition: background 0.3s ease, opacity 0.3s ease;
         }
 
         .controls select option {
@@ -92,23 +92,20 @@
             color: white;
         }
 
-        .controls select:hover, .controls button:hover {
+        .controls select:hover:not(:disabled), .controls button:hover:not(:disabled) {
             background: rgba(0, 0, 0, 0.4);
         }
         
-        .btn-danger {
-            background: rgba(255, 50, 50, 0.2) !important;
-        }
-        .btn-danger:hover {
-            background: rgba(255, 50, 50, 0.4) !important;
+        .controls button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
         }
 
-        .btn-success {
-            background: rgba(46, 204, 113, 0.2) !important;
-        }
-        .btn-success:hover {
-            background: rgba(46, 204, 113, 0.4) !important;
-        }
+        .btn-danger { background: rgba(255, 50, 50, 0.2) !important; }
+        .btn-danger:hover:not(:disabled) { background: rgba(255, 50, 50, 0.4) !important; }
+
+        .btn-success { background: rgba(46, 204, 113, 0.2) !important; }
+        .btn-success:hover:not(:disabled) { background: rgba(46, 204, 113, 0.4) !important; }
 
         /* Tabs System */
         .tabs {
@@ -159,36 +156,15 @@
             text-align: left;
         }
 
-        /* Scrollbar styling for history */
-        #stats-view::-webkit-scrollbar {
-            width: 8px;
-        }
-        #stats-view::-webkit-scrollbar-track {
-            background: rgba(0,0,0,0.1); 
-            border-radius: 4px;
-        }
-        #stats-view::-webkit-scrollbar-thumb {
-            background: rgba(255,255,255,0.3); 
-            border-radius: 4px;
-        }
+        /* Scrollbar styling */
+        #stats-view::-webkit-scrollbar { width: 8px; }
+        #stats-view::-webkit-scrollbar-track { background: rgba(0,0,0,0.1); border-radius: 4px; }
+        #stats-view::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.3); border-radius: 4px; }
 
         /* History Table */
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            font-size: 14px;
-        }
-        th, td {
-            padding: 8px 10px;
-            border-bottom: 1px solid var(--glass-border);
-        }
-        th {
-            background: rgba(0,0,0,0.2);
-            position: sticky;
-            top: 0;
-            backdrop-filter: blur(10px);
-            z-index: 10;
-        }
+        table { width: 100%; border-collapse: collapse; font-size: 14px; }
+        th, td { padding: 8px 10px; border-bottom: 1px solid var(--glass-border); }
+        th { background: rgba(0,0,0,0.2); position: sticky; top: 0; backdrop-filter: blur(10px); z-index: 10; }
         .correct-col { color: #a8ffb2; text-align: center; }
         .wrong-col { color: #ffb2b2; text-align: center; }
         .table-section-border { border-left: 1px solid var(--glass-border); }
@@ -210,9 +186,7 @@
             transform-style: preserve-3d;
         }
 
-        .card.is-flipped {
-            transform: rotateY(180deg);
-        }
+        .card.is-flipped { transform: rotateY(180deg); }
 
         .card-face {
             position: absolute;
@@ -233,10 +207,7 @@
             cursor: pointer;
         }
 
-        .card-back {
-            transform: rotateY(180deg);
-            font-size: 18px;
-        }
+        .card-back { transform: rotateY(180deg); font-size: 18px; }
 
         .mastery-badge {
             position: absolute;
@@ -268,10 +239,7 @@
         .stat-w { color: #ffb2b2; font-weight: bold; }
 
         /* Test Mode UI */
-        #test-controls {
-            display: none;
-            width: 100%;
-        }
+        #test-controls { display: none; width: 100%; }
 
         #test-input {
             width: calc(100% - 30px);
@@ -282,12 +250,23 @@
             color: white;
             font-size: 16px;
             margin-bottom: 10px;
+            outline: none;
         }
+        
+        #test-input:disabled { opacity: 0.5; }
 
         #test-feedback {
             font-weight: bold;
-            height: 20px;
+            min-height: 20px;
+            margin-bottom: 5px;
+        }
+        
+        #test-hint {
+            color: #ffd166;
+            font-size: 14px;
+            min-height: 20px;
             margin-bottom: 15px;
+            font-style: italic;
         }
 
         .progress-container {
@@ -314,10 +293,7 @@
             color: rgba(255,255,255,0.8);
         }
 
-        .stats-highlight {
-            color: #a8ffb2;
-            font-weight: bold;
-        }
+        .stats-highlight { color: #a8ffb2; font-weight: bold; }
 
         #learn-controls {
             display: flex;
@@ -371,17 +347,13 @@
                         <div class="mastery-badge">⭐ Mastered</div>
                         <span id="card-front-text" style="width: 100%; text-align: center;">Front</span>
                         
-                        <div class="card-history-stats" id="card-front-stats">
-                            </div>
-
-                        <div style="position: absolute; top: 10px; left: 15px; font-size: 12px; color: rgba(255,255,255,0.5);">Click to flip</div>
+                        <div class="card-history-stats" id="card-front-stats"></div>
+                        <div id="flip-hint" style="position: absolute; top: 10px; left: 15px; font-size: 12px; color: rgba(255,255,255,0.5);">Click to flip</div>
                     </div>
                     <div class="card-face card-back">
                         <div class="mastery-badge">⭐ Mastered</div>
                         <span id="card-back-text" style="width: 100%; text-align: center;">Back</span>
-                        
-                        <div class="card-history-stats" id="card-back-stats">
-                            </div>
+                        <div class="card-history-stats" id="card-back-stats"></div>
                     </div>
                 </div>
             </div>
@@ -395,7 +367,13 @@
             <div id="test-controls">
                 <input type="text" id="test-input" placeholder="Type your answer here..." autocomplete="off" onkeypress="handleEnter(event)">
                 <div id="test-feedback"></div>
-                <button class="controls button" onclick="checkAnswer()" style="width: 100%; padding: 15px;">Submit Answer</button>
+                <div id="test-hint"></div>
+                
+                <div class="controls" style="display: flex; gap: 10px; width: 100%;">
+                    <button id="btn-hint" class="button" onclick="showHint()" style="flex: 1; padding: 12px; background: rgba(255, 255, 255, 0.1);">Hint</button>
+                    <button id="btn-submit" class="button btn-success" onclick="checkAnswer()" style="flex: 2; padding: 12px;">Submit Answer</button>
+                    <button id="btn-giveup" class="button btn-danger" onclick="giveUp()" style="flex: 1; padding: 12px;">Give Up</button>
+                </div>
             </div>
         </div>
 
@@ -490,8 +468,9 @@
     let currentIsTermToDef = true; 
     let wordStats = {}; 
     let currentTab = 'learn';
+    let lastWrongAnswer = "";
 
-    const cacheKey = 'rhetoric_flashcard_progress_v5'; // Updated cache key for separated stats
+    const cacheKey = 'rhetoric_flashcard_progress_v6';
 
     // DOM Elements
     const cardFrontText = document.getElementById('card-front-text');
@@ -504,6 +483,7 @@
     const testControls = document.getElementById('test-controls');
     const testInput = document.getElementById('test-input');
     const testFeedback = document.getElementById('test-feedback');
+    const testHint = document.getElementById('test-hint');
     
     const progressBar = document.getElementById('progress-bar');
     const progressText = document.getElementById('progress-text');
@@ -511,6 +491,7 @@
     const badges = document.querySelectorAll('.mastery-badge');
     const cardFrontStats = document.getElementById('card-front-stats');
     const cardBackStats = document.getElementById('card-back-stats');
+    const flipHint = document.getElementById('flip-hint');
 
     const cardView = document.getElementById('card-view');
     const statsView = document.getElementById('stats-view');
@@ -550,9 +531,8 @@
     function resetSession() {
         currentIndex = 0;
         setCardDirection();
+        resetTestUI();
         updateUI();
-        testFeedback.textContent = "";
-        testInput.value = "";
         saveProgress();
     }
 
@@ -562,9 +542,8 @@
             currentIndex = 0;
             wordStats = {};
             setCardDirection();
+            resetTestUI();
             updateUI();
-            testFeedback.textContent = "";
-            testInput.value = "";
             if (currentTab === 'stats') populateHistoryTable();
         }
     }
@@ -586,14 +565,14 @@
             cardView.style.display = 'flex';
             learnControls.style.display = 'flex';
             cardContainer.style.pointerEvents = 'auto'; // allow flipping
+            flipHint.style.display = 'block';
         } else if (tabId === 'test') {
             tabTest.classList.add('active');
             cardView.style.display = 'flex';
             testControls.style.display = 'block';
             cardContainer.style.pointerEvents = 'none'; // disable flipping
-            testInput.value = '';
-            testFeedback.textContent = '';
-            setTimeout(() => testInput.focus(), 50);
+            flipHint.style.display = 'none';
+            resetTestUI();
         } else if (tabId === 'stats') {
             tabStats.classList.add('active');
             statsView.style.display = 'block';
@@ -614,18 +593,19 @@
 
     function ensureStats(term) {
         if (!wordStats[term]) {
-            wordStats[term] = {
-                learn: { correct: 0, wrong: 0 },
-                test: { correct: 0, wrong: 0 }
-            };
+            wordStats[term] = { learn: { correct: 0, wrong: 0 }, test: { correct: 0, wrong: 0 } };
         }
-        // Migration from old combined cache structures
-        if (wordStats[term].correct !== undefined) {
-            wordStats[term] = {
-                learn: { correct: wordStats[term].correct, wrong: wordStats[term].wrong },
-                test: { correct: 0, wrong: 0 }
-            };
-        }
+    }
+
+    function renderCardStats(term) {
+        ensureStats(term);
+        const stats = wordStats[term];
+        const statHTML = `
+            <div><span class="stat-label">Learn:</span> <span class="stat-c">${stats.learn.correct}</span> &nbsp;|&nbsp; <span class="stat-w">${stats.learn.wrong}</span></div>
+            <div><span class="stat-label">Test:</span> <span class="stat-c">${stats.test.correct}</span> &nbsp;|&nbsp; <span class="stat-w">${stats.test.wrong}</span></div>
+        `;
+        cardFrontStats.innerHTML = statHTML;
+        cardBackStats.innerHTML = statHTML;
     }
 
     function updateUI() {
@@ -635,21 +615,10 @@
         cardFrontText.textContent = currentIsTermToDef ? card.term : card.def;
         cardBackText.textContent = currentIsTermToDef ? card.def : card.term;
 
-        ensureStats(card.term);
-        const stats = wordStats[card.term];
+        renderCardStats(card.term);
 
-        const statHTML = `
-            <div><span class="stat-label">Learn:</span> <span class="stat-c">${stats.learn.correct}</span> &nbsp;|&nbsp; <span class="stat-w">${stats.learn.wrong}</span></div>
-            <div><span class="stat-label">Test:</span> <span class="stat-c">${stats.test.correct}</span> &nbsp;|&nbsp; <span class="stat-w">${stats.test.wrong}</span></div>
-        `;
-        cardFrontStats.innerHTML = statHTML;
-        cardBackStats.innerHTML = statHTML;
-
-        // Mastery relies on having at least 1 correct answer in EITHER mode
-        const isMastered = (stats.learn.correct + stats.test.correct) > 0;
-        badges.forEach(badge => {
-            badge.style.display = isMastered ? 'block' : 'none';
-        });
+        const isMastered = (wordStats[card.term].learn.correct + wordStats[card.term].test.correct) > 0;
+        badges.forEach(badge => badge.style.display = isMastered ? 'block' : 'none');
 
         const percent = ((currentIndex + 1) / flashcards.length) * 100;
         progressBar.style.width = `${percent}%`;
@@ -675,9 +644,14 @@
         if (currentIndex < flashcards.length - 1) {
             currentIndex++;
             setCardDirection(); 
+            resetTestUI();
             updateUI();
         } else {
-            alert("You have reached the end of the flashcards!");
+            alert("You have reached the end of the flashcards! Restarting from beginning.");
+            currentIndex = 0;
+            setCardDirection();
+            resetTestUI();
+            updateUI();
         }
     }
 
@@ -686,7 +660,7 @@
         updateUI(); 
     }
 
-    // --- Learn Mode Self-Grading ---
+    // --- Learn Mode Controls ---
     function markCorrect() {
         const term = flashcards[currentIndex].term;
         ensureStats(term);
@@ -707,9 +681,90 @@
         nextCard();
     }
 
-    // --- Test Mode Typing ---
+    // --- Test Mode Controls ---
+    function resetTestUI() {
+        testInput.value = '';
+        testFeedback.textContent = '';
+        testHint.textContent = '';
+        lastWrongAnswer = "";
+        
+        testInput.disabled = false;
+        document.getElementById('btn-hint').disabled = false;
+        document.getElementById('btn-submit').disabled = false;
+        document.getElementById('btn-giveup').disabled = false;
+        
+        if(currentTab === 'test') {
+            setTimeout(() => testInput.focus(), 50);
+        }
+    }
+
+    function disableTestButtons() {
+        testInput.disabled = true;
+        document.getElementById('btn-hint').disabled = true;
+        document.getElementById('btn-submit').disabled = true;
+        document.getElementById('btn-giveup').disabled = true;
+    }
+
+    function showHint() {
+        const card = flashcards[currentIndex];
+        const correctAnswer = currentIsTermToDef ? card.def : card.term;
+        let hintStr = "";
+        
+        if (correctAnswer.length > 25) {
+            const words = correctAnswer.split(" ");
+            hintStr = words[0] + " " + words[1] + " ... (" + words.length + " words total)";
+        } else {
+            hintStr = correctAnswer.substring(0, 2) + "..." + " (" + correctAnswer.length + " letters)";
+        }
+        
+        testHint.textContent = `Hint: ${hintStr}`;
+        testInput.focus();
+    }
+
+    function giveUp() {
+        const card = flashcards[currentIndex];
+        const correctAnswer = currentIsTermToDef ? card.def : card.term;
+        
+        testFeedback.style.color = '#ffb2b2';
+        testFeedback.textContent = `The answer was: ${correctAnswer}`;
+        
+        ensureStats(card.term);
+        wordStats[card.term].test.wrong++;
+        saveProgress();
+        renderCardStats(card.term);
+
+        flashcard.classList.add('is-flipped');
+        disableTestButtons();
+
+        setTimeout(() => {
+            nextCard();
+        }, 3500);
+    }
+
     function handleEnter(e) {
         if (e.key === 'Enter') checkAnswer();
+    }
+
+    function getEditDistance(a, b) {
+        if(a.length === 0) return b.length; 
+        if(b.length === 0) return a.length; 
+        let matrix = [];
+        for(let i = 0; i <= b.length; i++) matrix[i] = [i];
+        for(let j = 0; j <= a.length; j++) matrix[0][j] = j;
+        for(let i = 1; i <= b.length; i++) {
+            for(let j = 1; j <= a.length; j++) {
+                if(b.charAt(i-1) === a.charAt(j-1)){
+                    matrix[i][j] = matrix[i-1][j-1];
+                } else {
+                    matrix[i][j] = Math.min(
+                        matrix[i-1][j-1] + 1, // substitution
+                        Math.min(matrix[i][j-1] + 1, // insertion
+                        matrix[i-1][j] + 1) // deletion
+                    );
+                }
+            }
+        }
+        return matrix[b.length][a.length];
     }
 
     function checkAnswer() {
@@ -717,41 +772,73 @@
         const correctAnswer = currentIsTermToDef ? card.def : card.term;
         const userAnswer = testInput.value.trim().toLowerCase();
         
+        // Validation: Empty
+        if (userAnswer === "") {
+            testFeedback.style.color = '#ffd166';
+            testFeedback.textContent = "Please type an answer before submitting.";
+            return;
+        }
+
+        // Validation: Repeat Wrong
+        if (userAnswer === lastWrongAnswer) {
+            testFeedback.style.color = '#ffd166';
+            testFeedback.textContent = "You just tried that! Guess something else or use a hint.";
+            return;
+        }
+
         const cleanCorrect = correctAnswer.toLowerCase().replace(/[.,\/#!$%\^&\*;:{}=\-_`~()]/g,"");
         const cleanUser = userAnswer.replace(/[.,\/#!$%\^&\*;:{}=\-_`~()]/g,"");
 
         ensureStats(card.term);
 
-        if (cleanUser === cleanCorrect || (cleanCorrect.includes(cleanUser) && cleanUser.length > 4)) {
+        // Forgiving Spelling Logic
+        const dist = getEditDistance(cleanUser, cleanCorrect);
+        // Allow ~1 error per 6 characters
+        const allowedErrors = Math.max(1, Math.floor(cleanCorrect.length / 6)); 
+        
+        let isCorrect = false;
+        let typoAlert = false;
+
+        if (cleanUser === cleanCorrect) {
+            isCorrect = true;
+        } else if (dist <= allowedErrors) {
+            isCorrect = true;
+            typoAlert = true;
+        } else if (cleanCorrect.includes(cleanUser) && cleanUser.length > 4) {
+            // Retain the fallback for long definitions
+            isCorrect = true;
+        }
+
+        if (isCorrect) {
             testFeedback.style.color = '#a8ffb2';
-            testFeedback.textContent = "Correct!";
-            wordStats[card.term].test.correct++;
+            if (typoAlert) {
+                testFeedback.textContent = `Correct! (Typo allowed. Exact answer: ${correctAnswer})`;
+            } else {
+                testFeedback.textContent = "Correct!";
+            }
             
+            wordStats[card.term].test.correct++;
+            saveProgress();
+            renderCardStats(card.term);
+
             flashcard.classList.add('is-flipped');
+            disableTestButtons();
+
             setTimeout(() => {
                 nextCard();
-                testInput.value = '';
-                testFeedback.textContent = '';
-                testInput.focus();
-            }, 1500);
+            }, 2500);
         } else {
             testFeedback.style.color = '#ffb2b2';
-            testFeedback.textContent = `Incorrect. The answer is: ${correctAnswer}`;
-            wordStats[card.term].test.wrong++;
+            testFeedback.textContent = `Incorrect. Try again, ask for a hint, or Give Up.`;
             
-            flashcard.classList.add('is-flipped');
+            lastWrongAnswer = userAnswer; // Record to block duplicates
+            wordStats[card.term].test.wrong++;
+            saveProgress();
+            renderCardStats(card.term);
+            
+            testInput.value = '';
+            testInput.focus();
         }
-        
-        saveProgress();
-        
-        // Refresh card stats immediately
-        const stats = wordStats[card.term];
-        const statHTML = `
-            <div><span class="stat-label">Learn:</span> <span class="stat-c">${stats.learn.correct}</span> &nbsp;|&nbsp; <span class="stat-w">${stats.learn.wrong}</span></div>
-            <div><span class="stat-label">Test:</span> <span class="stat-c">${stats.test.correct}</span> &nbsp;|&nbsp; <span class="stat-w">${stats.test.wrong}</span></div>
-        `;
-        cardFrontStats.innerHTML = statHTML;
-        cardBackStats.innerHTML = statHTML;
     }
 
     // --- Statistics Rendering ---
