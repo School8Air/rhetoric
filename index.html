@@ -50,6 +50,7 @@
             width: 100%;
             max-width: 600px;
             text-align: center;
+            position: relative;
         }
 
         header {
@@ -58,13 +59,22 @@
             align-items: center;
             width: 100%;
             margin-bottom: 20px;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .controls {
+            display: flex;
+            gap: 5px;
+            flex-wrap: wrap;
+            justify-content: center;
         }
 
         .controls select, .controls button {
             background: rgba(0, 0, 0, 0.2);
             border: 1px solid var(--glass-border);
             color: white;
-            padding: 10px 15px;
+            padding: 8px 12px;
             border-radius: 10px;
             font-size: 14px;
             cursor: pointer;
@@ -80,6 +90,13 @@
 
         .controls select:hover, .controls button:hover {
             background: rgba(0, 0, 0, 0.4);
+        }
+        
+        .btn-danger {
+            background: rgba(255, 50, 50, 0.2) !important;
+        }
+        .btn-danger:hover {
+            background: rgba(255, 50, 50, 0.4) !important;
         }
 
         /* Card Flip Animation */
@@ -125,6 +142,18 @@
             font-size: 18px;
         }
 
+        .mastery-badge {
+            position: absolute;
+            top: 10px;
+            right: 15px;
+            font-size: 12px;
+            background: rgba(46, 204, 113, 0.4);
+            padding: 5px 10px;
+            border-radius: 15px;
+            border: 1px solid rgba(46, 204, 113, 0.6);
+            display: none;
+        }
+
         /* Test Mode UI */
         #test-ui {
             display: none;
@@ -154,7 +183,7 @@
             background: rgba(0,0,0,0.2);
             border-radius: 10px;
             height: 10px;
-            margin-bottom: 15px;
+            margin-bottom: 5px;
             overflow: hidden;
         }
 
@@ -163,6 +192,19 @@
             background: rgba(255,255,255,0.8);
             width: 0%;
             transition: width 0.3s ease;
+        }
+
+        .stats-row {
+            display: flex;
+            justify-content: space-between;
+            font-size: 12px;
+            margin-bottom: 15px;
+            color: rgba(255,255,255,0.8);
+        }
+
+        .stats-highlight {
+            color: #a8ffb2;
+            font-weight: bold;
         }
 
         .nav-buttons {
@@ -184,7 +226,7 @@
 <div class="container">
     <div class="glass-panel">
         <header>
-            <h2 style="margin: 0;">Rhetoric Review</h2>
+            <h2 style="margin: 0; font-size: 22px;">Rhetoric Review</h2>
             <div class="controls">
                 <select id="mode-select" onchange="changeMode()">
                     <option value="learn">Learn Mode</option>
@@ -195,19 +237,29 @@
                     <option value="term-def">Term → Def</option>
                     <option value="def-term">Def → Term</option>
                 </select>
-                <button onclick="resetProgress()">Reset</button>
+                <button onclick="resetSession()">Restart</button>
+                <button class="btn-danger" onclick="wipeData()">Wipe Data</button>
             </div>
         </header>
 
         <div class="progress-container">
             <div class="progress-bar" id="progress-bar"></div>
         </div>
-        <div style="font-size: 12px; margin-bottom: 15px;" id="progress-text">Card 1 of X</div>
+        <div class="stats-row">
+            <span id="progress-text">Card 1 of X</span>
+            <span id="mastery-text">Mastered: <span class="stats-highlight">0</span></span>
+        </div>
 
         <div class="card-container" id="card-container" onclick="flipCard()">
             <div class="card" id="flashcard">
-                <div class="card-face card-front" id="card-front">Front</div>
-                <div class="card-face card-back" id="card-back">Back</div>
+                <div class="card-face card-front">
+                    <div class="mastery-badge">⭐ Mastered</div>
+                    <span id="card-front-text">Front</span>
+                </div>
+                <div class="card-face card-back">
+                    <div class="mastery-badge">⭐ Mastered</div>
+                    <span id="card-back-text">Back</span>
+                </div>
             </div>
         </div>
 
@@ -288,11 +340,13 @@
     ];
 
     let currentIndex = 0;
-    let currentIsTermToDef = true; // Tracks the current card's layout
+    let currentIsTermToDef = true; 
+    let masteryData = {}; // Tracks which terms are mastered
+
     const cacheKey = 'rhetoric_flashcard_progress';
 
-    const cardFront = document.getElementById('card-front');
-    const cardBack = document.getElementById('card-back');
+    const cardFrontText = document.getElementById('card-front-text');
+    const cardBackText = document.getElementById('card-back-text');
     const flashcard = document.getElementById('flashcard');
     const cardContainer = document.getElementById('card-container');
     const modeSelect = document.getElementById('mode-select');
@@ -303,6 +357,8 @@
     const testFeedback = document.getElementById('test-feedback');
     const progressBar = document.getElementById('progress-bar');
     const progressText = document.getElementById('progress-text');
+    const masteryText = document.getElementById('mastery-text');
+    const badges = document.querySelectorAll('.mastery-badge');
 
     function init() {
         loadProgress();
@@ -314,7 +370,8 @@
         const state = {
             index: currentIndex,
             mode: modeSelect.value,
-            direction: dirSelect.value
+            direction: dirSelect.value,
+            mastery: masteryData
         };
         localStorage.setItem(cacheKey, JSON.stringify(state));
     }
@@ -326,10 +383,11 @@
             currentIndex = state.index;
             modeSelect.value = state.mode;
             dirSelect.value = state.direction;
+            masteryData = state.mastery || {};
         }
     }
 
-    function resetProgress() {
+    function resetSession() {
         currentIndex = 0;
         setCardDirection();
         saveProgress();
@@ -338,10 +396,21 @@
         testInput.value = "";
     }
 
-    // Determine the direction for the specific card based on dropdown
+    function wipeData() {
+        if(confirm("Are you sure you want to delete all your progress and mastery data?")) {
+            localStorage.removeItem(cacheKey);
+            currentIndex = 0;
+            masteryData = {};
+            setCardDirection();
+            updateUI();
+            testFeedback.textContent = "";
+            testInput.value = "";
+        }
+    }
+
     function setCardDirection() {
         if (dirSelect.value === 'mixed') {
-            currentIsTermToDef = Math.random() > 0.5; // 50% chance of either layout
+            currentIsTermToDef = Math.random() > 0.5; 
         } else {
             currentIsTermToDef = (dirSelect.value === 'term-def');
         }
@@ -351,14 +420,24 @@
         flashcard.classList.remove('is-flipped');
         const card = flashcards[currentIndex];
         
-        // Use the locked-in direction for this specific card
-        cardFront.textContent = currentIsTermToDef ? card.term : card.def;
-        cardBack.textContent = currentIsTermToDef ? card.def : card.term;
+        cardFrontText.textContent = currentIsTermToDef ? card.term : card.def;
+        cardBackText.textContent = currentIsTermToDef ? card.def : card.term;
 
+        // Update Mastery Visuals
+        const isMastered = masteryData[card.term] === true;
+        badges.forEach(badge => {
+            badge.style.display = isMastered ? 'block' : 'none';
+        });
+
+        // Update Progress Texts
         const percent = ((currentIndex + 1) / flashcards.length) * 100;
         progressBar.style.width = `${percent}%`;
         progressText.textContent = `Card ${currentIndex + 1} of ${flashcards.length}`;
+        
+        const masteredCount = Object.keys(masteryData).length;
+        masteryText.innerHTML = `Mastered: <span class="stats-highlight">${masteredCount}</span> / ${flashcards.length}`;
 
+        // Toggle Views
         if (modeSelect.value === 'learn') {
             learnUI.style.display = 'flex';
             testUI.style.display = 'none';
@@ -383,7 +462,7 @@
     function nextCard() {
         if (currentIndex < flashcards.length - 1) {
             currentIndex++;
-            setCardDirection(); // Roll a new direction for the next card
+            setCardDirection(); 
             updateUI();
         }
     }
@@ -391,27 +470,21 @@
     function prevCard() {
         if (currentIndex > 0) {
             currentIndex--;
-            setCardDirection(); // Roll a new direction for the previous card
+            setCardDirection(); 
             updateUI();
         }
     }
 
-    function changeMode() { 
-        updateUI(); 
-    }
-    
-    function changeDirection() { 
-        setCardDirection(); // Update immediately if user changes the dropdown manually
-        updateUI(); 
-    }
+    function changeMode() { updateUI(); }
+    function changeDirection() { setCardDirection(); updateUI(); }
 
     function handleEnter(e) {
         if (e.key === 'Enter') checkAnswer();
     }
 
     function checkAnswer() {
-        // Evaluate based on the locked-in direction
-        const correctAnswer = currentIsTermToDef ? flashcards[currentIndex].def : flashcards[currentIndex].term;
+        const card = flashcards[currentIndex];
+        const correctAnswer = currentIsTermToDef ? card.def : card.term;
         const userAnswer = testInput.value.trim().toLowerCase();
         
         const cleanCorrect = correctAnswer.toLowerCase().replace(/[.,\/#!$%\^&\*;:{}=\-_`~()]/g,"");
@@ -420,6 +493,10 @@
         if (cleanUser === cleanCorrect || (cleanCorrect.includes(cleanUser) && cleanUser.length > 4)) {
             testFeedback.style.color = '#a8ffb2';
             testFeedback.textContent = "Correct!";
+            
+            // Mark as mastered
+            masteryData[card.term] = true;
+            
             flashcard.classList.add('is-flipped');
             setTimeout(() => {
                 nextCard();
@@ -429,6 +506,7 @@
             testFeedback.textContent = `Incorrect. The answer is: ${correctAnswer}`;
             flashcard.classList.add('is-flipped');
         }
+        saveProgress();
     }
 
     init();
