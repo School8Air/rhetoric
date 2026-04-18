@@ -103,19 +103,45 @@
             background: rgba(255, 50, 50, 0.4) !important;
         }
 
-        .btn-active {
-            background: rgba(255, 255, 255, 0.3) !important;
+        /* Tabs System */
+        .tabs {
+            display: flex;
+            width: 100%;
+            margin-bottom: 20px;
+            background: rgba(0,0,0,0.2);
+            border-radius: 10px;
+            border: 1px solid var(--glass-border);
+            overflow: hidden;
+            flex-shrink: 0;
+        }
+
+        .tab {
+            flex: 1;
+            padding: 12px;
+            text-align: center;
+            cursor: pointer;
+            font-weight: 500;
+            transition: background 0.3s ease, font-weight 0.3s ease;
+        }
+
+        .tab.active {
+            background: rgba(255,255,255,0.25);
             font-weight: bold;
+            box-shadow: inset 0 -3px 0 rgba(255,255,255,0.5);
+        }
+
+        .tab:hover:not(.active) {
+            background: rgba(255,255,255,0.1);
         }
 
         /* Views */
-        #flashcard-view {
+        #card-view {
             display: flex;
             flex-direction: column;
             width: 100%;
         }
 
-        #history-view {
+        #stats-view {
             display: none;
             flex-direction: column;
             width: 100%;
@@ -127,14 +153,14 @@
         }
 
         /* Scrollbar styling for history */
-        #history-view::-webkit-scrollbar {
+        #stats-view::-webkit-scrollbar {
             width: 8px;
         }
-        #history-view::-webkit-scrollbar-track {
+        #stats-view::-webkit-scrollbar-track {
             background: rgba(0,0,0,0.1); 
             border-radius: 4px;
         }
-        #history-view::-webkit-scrollbar-thumb {
+        #stats-view::-webkit-scrollbar-thumb {
             background: rgba(255,255,255,0.3); 
             border-radius: 4px;
         }
@@ -230,10 +256,9 @@
         .stat-w { color: #ffb2b2; }
 
         /* Test Mode UI */
-        #test-ui {
+        #test-controls {
             display: none;
             width: 100%;
-            margin-top: 20px;
         }
 
         #test-input {
@@ -282,13 +307,13 @@
             font-weight: bold;
         }
 
-        .nav-buttons {
+        #learn-controls {
             display: flex;
             justify-content: space-between;
             width: 100%;
         }
 
-        .nav-buttons button {
+        #learn-controls button {
             flex: 1;
             margin: 0 5px;
             padding: 12px;
@@ -303,22 +328,23 @@
         <header>
             <h2 style="margin: 0; font-size: 22px;">Rhetoric Review</h2>
             <div class="controls">
-                <select id="mode-select" onchange="changeMode()">
-                    <option value="learn">Learn Mode</option>
-                    <option value="test">Test Mode</option>
-                </select>
                 <select id="direction-select" onchange="changeDirection()">
                     <option value="mixed" selected>Mixed (Auto)</option>
                     <option value="term-def">Term → Def</option>
                     <option value="def-term">Def → Term</option>
                 </select>
-                <button id="btn-history" onclick="toggleHistory()">View History</button>
                 <button onclick="resetSession()">Restart</button>
                 <button class="btn-danger" onclick="wipeData()">Wipe Data</button>
             </div>
         </header>
 
-        <div id="flashcard-view">
+        <div class="tabs">
+            <div class="tab active" id="tab-learn" onclick="switchTab('learn')">Learn</div>
+            <div class="tab" id="tab-test" onclick="switchTab('test')">Test</div>
+            <div class="tab" id="tab-stats" onclick="switchTab('stats')">Statistics</div>
+        </div>
+
+        <div id="card-view">
             <div class="progress-container">
                 <div class="progress-bar" id="progress-bar"></div>
             </div>
@@ -346,19 +372,19 @@
                 </div>
             </div>
 
-            <div id="test-ui">
+            <div id="test-controls">
                 <input type="text" id="test-input" placeholder="Type your answer here..." onkeypress="handleEnter(event)">
                 <div id="test-feedback"></div>
                 <button class="controls button" onclick="checkAnswer()" style="width: 100%; padding: 15px;">Submit Answer</button>
             </div>
 
-            <div class="nav-buttons" id="learn-ui">
+            <div id="learn-controls">
                 <button class="controls button" onclick="prevCard()">Previous</button>
                 <button class="controls button" onclick="nextCard()">Next</button>
             </div>
         </div>
 
-        <div id="history-view">
+        <div id="stats-view">
             <table>
                 <thead>
                     <tr>
@@ -441,21 +467,23 @@
 
     let currentIndex = 0;
     let currentIsTermToDef = true; 
-    let wordStats = {}; // Tracks { correct: int, wrong: int } for each term
+    let wordStats = {}; 
+    let currentTab = 'learn';
 
-    const cacheKey = 'rhetoric_flashcard_progress_v2';
+    const cacheKey = 'rhetoric_flashcard_progress_v3';
 
     // DOM Elements
     const cardFrontText = document.getElementById('card-front-text');
     const cardBackText = document.getElementById('card-back-text');
     const flashcard = document.getElementById('flashcard');
     const cardContainer = document.getElementById('card-container');
-    const modeSelect = document.getElementById('mode-select');
     const dirSelect = document.getElementById('direction-select');
-    const learnUI = document.getElementById('learn-ui');
-    const testUI = document.getElementById('test-ui');
+    
+    const learnControls = document.getElementById('learn-controls');
+    const testControls = document.getElementById('test-controls');
     const testInput = document.getElementById('test-input');
     const testFeedback = document.getElementById('test-feedback');
+    
     const progressBar = document.getElementById('progress-bar');
     const progressText = document.getElementById('progress-text');
     const masteryText = document.getElementById('mastery-text');
@@ -463,22 +491,25 @@
     const cardFrontStats = document.getElementById('card-front-stats');
     const cardBackStats = document.getElementById('card-back-stats');
 
-    const flashcardView = document.getElementById('flashcard-view');
-    const historyView = document.getElementById('history-view');
-    const btnHistory = document.getElementById('btn-history');
+    const cardView = document.getElementById('card-view');
+    const statsView = document.getElementById('stats-view');
     const historyTableBody = document.getElementById('history-table-body');
-    let showingHistory = false;
+
+    // Tab Elements
+    const tabLearn = document.getElementById('tab-learn');
+    const tabTest = document.getElementById('tab-test');
+    const tabStats = document.getElementById('tab-stats');
 
     function init() {
         loadProgress();
         setCardDirection();
-        updateUI();
+        switchTab(currentTab); // This will call updateUI
     }
 
     function saveProgress() {
         const state = {
             index: currentIndex,
-            mode: modeSelect.value,
+            tab: currentTab,
             direction: dirSelect.value,
             stats: wordStats
         };
@@ -490,7 +521,7 @@
         if (saved) {
             const state = JSON.parse(saved);
             currentIndex = state.index || 0;
-            modeSelect.value = state.mode || 'learn';
+            currentTab = state.tab || 'learn';
             dirSelect.value = state.direction || 'mixed';
             wordStats = state.stats || {};
         }
@@ -499,11 +530,10 @@
     function resetSession() {
         currentIndex = 0;
         setCardDirection();
-        saveProgress();
         updateUI();
         testFeedback.textContent = "";
         testInput.value = "";
-        if (showingHistory) toggleHistory();
+        saveProgress();
     }
 
     function wipeData() {
@@ -515,8 +545,45 @@
             updateUI();
             testFeedback.textContent = "";
             testInput.value = "";
-            if (showingHistory) populateHistoryTable();
+            if (currentTab === 'stats') populateHistoryTable();
         }
+    }
+
+    function switchTab(tabId) {
+        currentTab = tabId;
+        
+        // Remove active class from all
+        tabLearn.classList.remove('active');
+        tabTest.classList.remove('active');
+        tabStats.classList.remove('active');
+
+        // Hide all views
+        cardView.style.display = 'none';
+        statsView.style.display = 'none';
+        learnControls.style.display = 'none';
+        testControls.style.display = 'none';
+
+        if (tabId === 'learn') {
+            tabLearn.classList.add('active');
+            cardView.style.display = 'flex';
+            learnControls.style.display = 'flex';
+            cardContainer.style.pointerEvents = 'auto'; // allow flipping
+        } else if (tabId === 'test') {
+            tabTest.classList.add('active');
+            cardView.style.display = 'flex';
+            testControls.style.display = 'block';
+            cardContainer.style.pointerEvents = 'none'; // disable flipping
+            testInput.value = '';
+            testFeedback.textContent = '';
+            setTimeout(() => testInput.focus(), 50);
+        } else if (tabId === 'stats') {
+            tabStats.classList.add('active');
+            statsView.style.display = 'block';
+            populateHistoryTable();
+        }
+
+        saveProgress();
+        if(tabId !== 'stats') updateUI();
     }
 
     function setCardDirection() {
@@ -540,13 +607,12 @@
         cardFrontStats.innerHTML = statHTML;
         cardBackStats.innerHTML = statHTML;
 
-        // Mastery relies on having at least 1 correct answer
         const isMastered = stats.correct > 0;
         badges.forEach(badge => {
             badge.style.display = isMastered ? 'block' : 'none';
         });
 
-        // Update Progress Texts
+        // Update Progress
         const percent = ((currentIndex + 1) / flashcards.length) * 100;
         progressBar.style.width = `${percent}%`;
         progressText.textContent = `Card ${currentIndex + 1} of ${flashcards.length}`;
@@ -557,24 +623,11 @@
         }
         masteryText.innerHTML = `Mastered: <span class="stats-highlight">${masteredCount}</span> / ${flashcards.length}`;
 
-        // Toggle Test/Learn Views
-        if (modeSelect.value === 'learn') {
-            learnUI.style.display = 'flex';
-            testUI.style.display = 'none';
-            cardContainer.style.pointerEvents = 'auto'; 
-        } else {
-            learnUI.style.display = 'none';
-            testUI.style.display = 'block';
-            cardContainer.style.pointerEvents = 'none'; 
-            testInput.value = '';
-            testInput.focus();
-            testFeedback.textContent = '';
-        }
         saveProgress();
     }
 
     function flipCard() {
-        if (modeSelect.value === 'learn') {
+        if (currentTab === 'learn') {
             flashcard.classList.toggle('is-flipped');
         }
     }
@@ -595,8 +648,10 @@
         }
     }
 
-    function changeMode() { updateUI(); }
-    function changeDirection() { setCardDirection(); updateUI(); }
+    function changeDirection() { 
+        setCardDirection(); 
+        updateUI(); 
+    }
 
     function handleEnter(e) {
         if (e.key === 'Enter') checkAnswer();
@@ -610,56 +665,34 @@
         const cleanCorrect = correctAnswer.toLowerCase().replace(/[.,\/#!$%\^&\*;:{}=\-_`~()]/g,"");
         const cleanUser = userAnswer.replace(/[.,\/#!$%\^&\*;:{}=\-_`~()]/g,"");
 
-        // Initialize stats if they don't exist
         if (!wordStats[card.term]) wordStats[card.term] = { correct: 0, wrong: 0 };
 
         if (cleanUser === cleanCorrect || (cleanCorrect.includes(cleanUser) && cleanUser.length > 4)) {
             testFeedback.style.color = '#a8ffb2';
             testFeedback.textContent = "Correct!";
-            
             wordStats[card.term].correct++;
-            
             flashcard.classList.add('is-flipped');
             setTimeout(() => {
                 nextCard();
+                testInput.value = '';
+                testFeedback.textContent = '';
+                testInput.focus();
             }, 1500);
         } else {
             testFeedback.style.color = '#ffb2b2';
             testFeedback.textContent = `Incorrect. The answer is: ${correctAnswer}`;
-            
             wordStats[card.term].wrong++;
-            
             flashcard.classList.add('is-flipped');
         }
         
         saveProgress();
-        // Update stats on card immediately
         const statHTML = `<span class="stat-c">Correct: ${wordStats[card.term].correct}</span> | <span class="stat-w">Wrong: ${wordStats[card.term].wrong}</span>`;
         cardFrontStats.innerHTML = statHTML;
         cardBackStats.innerHTML = statHTML;
     }
 
-    // --- History View Logic ---
-    function toggleHistory() {
-        showingHistory = !showingHistory;
-        if (showingHistory) {
-            flashcardView.style.display = 'none';
-            historyView.style.display = 'block';
-            btnHistory.textContent = 'Back to Cards';
-            btnHistory.classList.add('btn-active');
-            populateHistoryTable();
-        } else {
-            flashcardView.style.display = 'flex';
-            historyView.style.display = 'none';
-            btnHistory.textContent = 'View History';
-            btnHistory.classList.remove('btn-active');
-            updateUI(); // Refresh UI to reflect any changes
-        }
-    }
-
     function populateHistoryTable() {
         historyTableBody.innerHTML = '';
-        
         flashcards.forEach(card => {
             const stats = wordStats[card.term] || { correct: 0, wrong: 0 };
             const total = stats.correct + stats.wrong;
