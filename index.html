@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Omnibus Flashcards</title>
+    <style>
+        :root {
+            --glass-bg: rgba(255, 255, 255, 0.1);
+            --glass-border: rgba(255, 255, 255, 0.2);
+            --text-color: #ffffff;
+        }
+
+        body, html {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            color: var(--text-color);
+            overflow: hidden;
+            background: linear-gradient(-45deg, #ee7752, #e73c7e, #23a6d5, #23d5ab);
+            background-size: 400% 400%;
+            animation: gradientBG 15s ease infinite;
+        }
+
+        @keyframes gradientBG {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        .container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        .glass-panel {
+            background: var(--glass-bg);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid var(--glass-border);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+            width: 100%;
+            max-width: 600px;
+            text-align: center;
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            width: 100%;
+            margin-bottom: 20px;
+        }
+
+        .controls select, .controls button {
+            background: rgba(0, 0, 0, 0.2);
+            border: 1px solid var(--glass-border);
+            color: white;
+            padding: 10px 15px;
+            border-radius: 10px;
+            font-size: 14px;
+            cursor: pointer;
+            outline: none;
+            backdrop-filter: blur(5px);
+            transition: background 0.3s ease;
+        }
+
+        .controls select option {
+            background: #2b2b2b;
+            color: white;
+        }
+
+        .controls select:hover, .controls button:hover {
+            background: rgba(0, 0, 0, 0.4);
+        }
+
+        /* Card Flip Animation */
+        .card-container {
+            perspective: 1000px;
+            width: 100%;
+            height: 250px;
+            margin-bottom: 30px;
+            cursor: pointer;
+        }
+
+        .card {
+            width: 100%;
+            height: 100%;
+            position: relative;
+            transition: transform 0.6s cubic-bezier(0.4, 0.2, 0.2, 1);
+            transform-style: preserve-3d;
+        }
+
+        .card.is-flipped {
+            transform: rotateY(180deg);
+        }
+
+        .card-face {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            backface-visibility: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            box-sizing: border-box;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--glass-border);
+            border-radius: 15px;
+            font-size: 24px;
+            line-height: 1.4;
+        }
+
+        .card-back {
+            transform: rotateY(180deg);
+            font-size: 18px;
+        }
+
+        /* Test Mode UI */
+        #test-ui {
+            display: none;
+            width: 100%;
+            margin-top: 20px;
+        }
+
+        #test-input {
+            width: calc(100% - 30px);
+            padding: 15px;
+            border-radius: 10px;
+            border: 1px solid var(--glass-border);
+            background: rgba(0,0,0,0.2);
+            color: white;
+            font-size: 16px;
+            margin-bottom: 10px;
+        }
+
+        #test-feedback {
+            font-weight: bold;
+            height: 20px;
+            margin-bottom: 15px;
+        }
+
+        .progress-container {
+            width: 100%;
+            background: rgba(0,0,0,0.2);
+            border-radius: 10px;
+            height: 10px;
+            margin-bottom: 15px;
+            overflow: hidden;
+        }
+
+        .progress-bar {
+            height: 100%;
+            background: rgba(255,255,255,0.8);
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+
+        .nav-buttons {
+            display: flex;
+            justify-content: space-between;
+            width: 100%;
+        }
+
+        .nav-buttons button {
+            flex: 1;
+            margin: 0 5px;
+            padding: 12px;
+            font-size: 16px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="glass-panel">
+        <header>
+            <h2 style="margin: 0;">Omnibus Review</h2>
+            <div class="controls">
+                <select id="mode-select" onchange="changeMode()">
+                    <option value="learn">Learn Mode</option>
+                    <option value="test">Test Mode</option>
+                </select>
+                <select id="direction-select" onchange="changeDirection()">
+                    <option value="term-def">Term → Def</option>
+                    <option value="def-term">Def → Term</option>
+                </select>
+                <button onclick="resetProgress()">Reset</button>
+            </div>
+        </header>
+
+        <div class="progress-container">
+            <div class="progress-bar" id="progress-bar"></div>
+        </div>
+        <div style="font-size: 12px; margin-bottom: 15px;" id="progress-text">Card 1 of X</div>
+
+        <div class="card-container" id="card-container" onclick="flipCard()">
+            <div class="card" id="flashcard">
+                <div class="card-face card-front" id="card-front">Front</div>
+                <div class="card-face card-back" id="card-back">Back</div>
+            </div>
+        </div>
+
+        <div id="test-ui">
+            <input type="text" id="test-input" placeholder="Type your answer here..." onkeypress="handleEnter(event)">
+            <div id="test-feedback"></div>
+            <button class="controls button" onclick="checkAnswer()" style="width: 100%; padding: 15px;">Submit Answer</button>
+        </div>
+
+        <div class="nav-buttons" id="learn-ui">
+            <button class="controls button" onclick="prevCard()">Previous</button>
+            <button class="controls button" onclick="nextCard()">Next</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Complete Figure of Speech Dataset extracted from Appendix A
+    const flashcards = [
+        { term: "Absolute ellipsis", def: "A phrase or sentence in which the omitted material is not betrayed by the words which remain." },
+        { term: "Anadiplosis", def: "Repetition of an end at the next beginning." },
+        { term: "Anaphora", def: "Repetition at the beginning." },
+        { term: "Anapodoton", def: "The omission of one or more whole clauses which are not logically implied by the remaining text." },
+        { term: "Anastrophe", def: "The reversal of word order." },
+        { term: "Antanaclasis", def: "Repetition in different senses." },
+        { term: "Anthimeria", def: "The substitution of one part of speech for another." },
+        { term: "Antiptosis", def: "The substitution of a prepositional phrase for an adjective." },
+        { term: "Antisthecon", def: "The substitution of one or more letters in a word in an intentional misspelling." },
+        { term: "Antithesis", def: "The repetition of ideas by negation." },
+        { term: "Aphaeresis", def: "The subtraction of letters from the beginning of a word in an intentional misspelling." },
+        { term: "Apocope", def: "Subtraction of letters from the end of a word in an intentional misspelling." },
+        { term: "Aporia", def: "To talk about not being able to talk about something." },
+        { term: "Aposiopesis", def: "The intentional omission of the last part of a sentence or the last part of a thought." },
+        { term: "Asterismos", def: "The addition of a word to emphasize what follows." },
+        { term: "Asyndeton", def: "An omission of a conjunction." },
+        { term: "Auxesis", def: "Arrangement in ascending order." },
+        { term: "Catachresis", def: "An apparently inappropriate substitution of one word for another." },
+        { term: "Chiasmus", def: "Epanodos at the level of the passage." },
+        { term: "Congeries", def: "Repetition using other words." },
+        { term: "Diacope", def: "Repetition with only a word or two between." },
+        { term: "Ellipsis", def: "The general name for the omission of one or more words." },
+        { term: "Enallage", def: "An exchange of words or a substitution of one for another." },
+        { term: "Enthymeme", def: "An abbreviation of a syllogism, where one or more of the premises is missing." },
+        { term: "Epanalepsis", def: "Repetition of the beginning at the end." },
+        { term: "Epanodos", def: "Repetition in reverse order." },
+        { term: "Epanorthosis", def: "Addition by correction." },
+        { term: "Epenthesis", def: "The addition of letters in the middle of the word in a purposeful misspelling." },
+        { term: "Epistrophe", def: "Repetition at the end." },
+        { term: "Epizeuxis", def: "Immediate repetition." },
+        { term: "Gradatio", def: "Repeated repetition of an end at the next beginning." },
+        { term: "Hendiadys", def: "Two or more words used, but one meaning intended." },
+        { term: "Hypallage", def: "A reversal which seems to change the sense of a sentence." },
+        { term: "Hyperbaton", def: "The deviation from ordinary word order." },
+        { term: "Hysteron-proteron", def: "The reversal of temporal order in a sentence." },
+        { term: "Inclusio", def: "Repetition of the beginning." },
+        { term: "Isocolon", def: "The repetition of grammatical forms." },
+        { term: "Metalepsis", def: "The double substitution of a word for a related word." },
+        { term: "Metaplasmus", def: "A purposeful misspelling." },
+        { term: "Metathesis", def: "The rearrangement of one or more letters in a word in an intentional misspelling." },
+        { term: "Metonymy", def: "The substitution of one word for another related word." },
+        { term: "Paradiastole", def: "The repetition of the disjunctives, 'neither' and 'nor' or 'either' and 'or'." },
+        { term: "Parenthesis", def: "Parenthetical addition by way of explanation." },
+        { term: "Periphrasis", def: "The substitution of more for fewer words." },
+        { term: "Pleonasm", def: "The addition of superfluous words." },
+        { term: "Ploce", def: "Repetition in a general and restricted sense." },
+        { term: "Polyptoton", def: "The repetition of the same word or root in different grammatical forms." },
+        { term: "Polysyndeton", def: "The repetition of the word 'and' at the beginning of successive phrases." },
+        { term: "Praecisio", def: "Simple silence." },
+        { term: "Proparalepsis", def: "The addition of letters to the end of a word in a purposeful misspelling." },
+        { term: "Prosthesis", def: "The addition of letters at the beginning of a word in a purposeful misspelling." },
+        { term: "Repetitio", def: "Irregular repetition of a word or phrase." },
+        { term: "Scesis onomaton", def: "The intentional omission of a verb." },
+        { term: "Syllepsis", def: "The yoking of a verb to more than one subject with a different meaning implied in reference to each subject." },
+        { term: "Symploce", def: "Repetition at the beginning and the end." },
+        { term: "Syncope", def: "The subtraction of letters from the middle of a word in an intentional misspelling." },
+        { term: "Synecdoche", def: "The substitution of a part for a whole." },
+        { term: "Tmesis", def: "Breaking a word in two, sometimes to put another word in the spot." },
+        { term: "Zeugma", def: "The yoking of a verb to more than one subject while grammatically it strictly refers to only one of them." }
+    ];
+
+    let currentIndex = 0;
+    const cacheKey = 'omnibus_flashcard_progress';
+
+    // DOM Elements
+    const cardFront = document.getElementById('card-front');
+    const cardBack = document.getElementById('card-back');
+    const flashcard = document.getElementById('flashcard');
+    const cardContainer = document.getElementById('card-container');
+    const modeSelect = document.getElementById('mode-select');
+    const dirSelect = document.getElementById('direction-select');
+    const learnUI = document.getElementById('learn-ui');
+    const testUI = document.getElementById('test-ui');
+    const testInput = document.getElementById('test-input');
+    const testFeedback = document.getElementById('test-feedback');
+    const progressBar = document.getElementById('progress-bar');
+    const progressText = document.getElementById('progress-text');
+
+    // Initialize App
+    function init() {
+        loadProgress();
+        updateUI();
+    }
+
+    // Save & Load from Browser Cache (localStorage)
+    function saveProgress() {
+        const state = {
+            index: currentIndex,
+            mode: modeSelect.value,
+            direction: dirSelect.value
+        };
+        localStorage.setItem(cacheKey, JSON.stringify(state));
+    }
+
+    function loadProgress() {
+        const saved = localStorage.getItem(cacheKey);
+        if (saved) {
+            const state = JSON.parse(saved);
+            currentIndex = state.index;
+            modeSelect.value = state.mode;
+            dirSelect.value = state.direction;
+        }
+    }
+
+    function resetProgress() {
+        currentIndex = 0;
+        saveProgress();
+        updateUI();
+        testFeedback.textContent = "";
+        testInput.value = "";
+    }
+
+    // UI Updates
+    function updateUI() {
+        flashcard.classList.remove('is-flipped');
+        const card = flashcards[currentIndex];
+        const isTermToDef = dirSelect.value === 'term-def';
+        
+        cardFront.textContent = isTermToDef ? card.term : card.def;
+        cardBack.textContent = isTermToDef ? card.def : card.term;
+
+        // Progress formatting
+        const percent = ((currentIndex + 1) / flashcards.length) * 100;
+        progressBar.style.width = `${percent}%`;
+        progressText.textContent = `Card ${currentIndex + 1} of ${flashcards.length}`;
+
+        // Toggle Views
+        if (modeSelect.value === 'learn') {
+            learnUI.style.display = 'flex';
+            testUI.style.display = 'none';
+            cardContainer.style.pointerEvents = 'auto'; // allow flipping
+        } else {
+            learnUI.style.display = 'none';
+            testUI.style.display = 'block';
+            cardContainer.style.pointerEvents = 'none'; // disable clicking to cheat
+            testInput.value = '';
+            testInput.focus();
+            testFeedback.textContent = '';
+        }
+        saveProgress();
+    }
+
+    // Interactions
+    function flipCard() {
+        if (modeSelect.value === 'learn') {
+            flashcard.classList.toggle('is-flipped');
+        }
+    }
+
+    function nextCard() {
+        if (currentIndex < flashcards.length - 1) {
+            currentIndex++;
+            updateUI();
+        }
+    }
+
+    function prevCard() {
+        if (currentIndex > 0) {
+            currentIndex--;
+            updateUI();
+        }
+    }
+
+    function changeMode() { updateUI(); }
+    function changeDirection() { updateUI(); }
+
+    function handleEnter(e) {
+        if (e.key === 'Enter') checkAnswer();
+    }
+
+    // Basic String comparison for Test Mode
+    function checkAnswer() {
+        const isTermToDef = dirSelect.value === 'term-def';
+        const correctAnswer = isTermToDef ? flashcards[currentIndex].def : flashcards[currentIndex].term;
+        const userAnswer = testInput.value.trim().toLowerCase();
+        
+        // Remove punctuation for looser grading on definitions
+        const cleanCorrect = correctAnswer.toLowerCase().replace(/[.,\/#!$%\^&\*;:{}=\-_`~()]/g,"");
+        const cleanUser = userAnswer.replace(/[.,\/#!$%\^&\*;:{}=\-_`~()]/g,"");
+
+        if (cleanUser === cleanCorrect || cleanCorrect.includes(cleanUser) && cleanUser.length > 4) {
+            testFeedback.style.color = '#a8ffb2';
+            testFeedback.textContent = "Correct!";
+            flashcard.classList.add('is-flipped');
+            setTimeout(() => {
+                nextCard();
+            }, 1500);
+        } else {
+            testFeedback.style.color = '#ffb2b2';
+            testFeedback.textContent = `Incorrect. The answer is: ${correctAnswer}`;
+            flashcard.classList.add('is-flipped');
+        }
+    }
+
+    // Boot
+    init();
+</script>
+</body>
+</html>
