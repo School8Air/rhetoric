@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Omnibus Rhetoric Flashcards</title>
+    <title>Rhetoric Flashcards</title>
     <style>
         :root {
             --glass-bg: rgba(255, 255, 255, 0.1);
@@ -48,7 +48,7 @@
             padding: 30px;
             box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
             width: 100%;
-            max-width: 750px;
+            max-width: 800px;
             text-align: center;
             position: relative;
             max-height: 95vh;
@@ -100,6 +100,9 @@
         .btn-info { background: rgba(52, 152, 219, 0.2) !important; }
         .btn-info:hover:not(:disabled) { background: rgba(52, 152, 219, 0.4) !important; }
 
+        .btn-warning { background: rgba(243, 156, 18, 0.2) !important; }
+        .btn-warning:hover:not(:disabled) { background: rgba(243, 156, 18, 0.4) !important; }
+
         /* Tabs System */
         .tabs {
             display: flex;
@@ -121,7 +124,7 @@
             font-weight: 500;
             font-size: 14px;
             transition: background 0.3s ease, font-weight 0.3s ease;
-            min-width: 100px;
+            min-width: 90px;
         }
 
         .tab.active {
@@ -135,7 +138,7 @@
         /* Views */
         #card-view { display: flex; flex-direction: column; width: 100%; }
 
-        #stats-view, #list-view {
+        #stats-view, #list-view, #filter-view {
             display: none;
             flex-direction: column;
             width: 100%;
@@ -147,9 +150,9 @@
         }
 
         /* Scrollbar styling */
-        #stats-view::-webkit-scrollbar, #list-view::-webkit-scrollbar { width: 8px; }
-        #stats-view::-webkit-scrollbar-track, #list-view::-webkit-scrollbar-track { background: rgba(0,0,0,0.1); border-radius: 4px; }
-        #stats-view::-webkit-scrollbar-thumb, #list-view::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.3); border-radius: 4px; }
+        #stats-view::-webkit-scrollbar, #list-view::-webkit-scrollbar, #filter-view::-webkit-scrollbar { width: 8px; }
+        #stats-view::-webkit-scrollbar-track, #list-view::-webkit-scrollbar-track, #filter-view::-webkit-scrollbar-track { background: rgba(0,0,0,0.1); border-radius: 4px; }
+        #stats-view::-webkit-scrollbar-thumb, #list-view::-webkit-scrollbar-thumb, #filter-view::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.3); border-radius: 4px; }
 
         /* Dictionary List View */
         #list-view { gap: 15px; }
@@ -166,6 +169,60 @@
         .list-lesson { font-size: 13px; color: #ffd166; font-weight: normal; margin-left: 8px; }
         .list-def { font-size: 15px; margin-bottom: 10px; line-height: 1.4; }
         .list-ex { font-size: 13px; color: rgba(255,255,255,0.7); font-style: italic; border-left: 2px solid rgba(255,255,255,0.3); padding-left: 10px; }
+
+        /* Filter View */
+        .filter-actions {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 20px;
+            background: rgba(0,0,0,0.2);
+            padding: 15px;
+            border-radius: 10px;
+            border: 1px solid var(--glass-border);
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        .filter-actions button { flex: 1; padding: 12px; font-weight: bold; }
+        
+        .filter-group {
+            background: rgba(0, 0, 0, 0.2);
+            border: 1px solid var(--glass-border);
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 15px;
+        }
+        .filter-lesson-title {
+            font-size: 18px;
+            font-weight: bold;
+            color: #ffd166;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid var(--glass-border);
+        }
+        .filter-lesson-title input[type="checkbox"] { transform: scale(1.3); cursor: pointer; }
+        .filter-lesson-title label { cursor: pointer; }
+        
+        .filter-terms {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 12px;
+        }
+        .filter-terms label {
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+            background: rgba(255,255,255,0.05);
+            padding: 8px;
+            border-radius: 6px;
+            transition: background 0.2s;
+        }
+        .filter-terms label:hover { background: rgba(255,255,255,0.1); }
+        .filter-terms input[type="checkbox"] { cursor: pointer; }
 
         /* History Table */
         table { width: 100%; border-collapse: collapse; font-size: 14px; }
@@ -349,6 +406,7 @@
         <div class="tabs">
             <div class="tab active" id="tab-learn" onclick="switchTab('learn')">Learn (Cards)</div>
             <div class="tab" id="tab-test" onclick="switchTab('test')">Test (Typing)</div>
+            <div class="tab" id="tab-filter" onclick="switchTab('filter')">Filter Deck</div>
             <div class="tab" id="tab-stats" onclick="switchTab('stats')">Stats</div>
             <div class="tab" id="tab-list" onclick="switchTab('list')">List (All)</div>
         </div>
@@ -398,6 +456,16 @@
                     <button id="btn-giveup" class="button btn-danger" onclick="giveUp()" style="flex: 1; padding: 12px;">Give Up</button>
                 </div>
             </div>
+        </div>
+
+        <div id="filter-view">
+            <div class="filter-actions controls">
+                <button class="button btn-success" onclick="setAllFilters(true)">Select All</button>
+                <button class="button btn-danger" onclick="setAllFilters(false)">Deselect All</button>
+                <button class="button btn-warning" onclick="applyFiltersAndRestart()">Apply & Restart Deck</button>
+            </div>
+            <div id="filter-container">
+                </div>
         </div>
 
         <div id="stats-view">
@@ -491,14 +559,15 @@
         { term: "Zeugma", def: "The yoking of a verb to more than one subject while grammatically it strictly refers to only one of them.", example: "\"The aim of a ship's captain is a successful voyage; a doctor's, health; a general's, victory. ( The Republic  by Cicero)\"", lesson: "Lesson V" }
     ];
 
-    let studyDeck = []; // The randomized deck used for studying
+    let enabledTerms = []; // Determines which cards are currently active in the deck
+    let studyDeck = []; 
     let currentIndex = 0;
     let currentIsTermToDef = true; 
     let wordStats = {}; 
     let currentTab = 'learn';
     let lastWrongAnswer = "";
 
-    const cacheKey = 'rhetoric_flashcard_progress_v9'; // Bumped cache key
+    const cacheKey = 'rhetoric_flashcard_progress_v10'; 
 
     // DOM Elements
     const cardFrontText = document.getElementById('card-front-text');
@@ -526,15 +595,21 @@
     const cardView = document.getElementById('card-view');
     const statsView = document.getElementById('stats-view');
     const listView = document.getElementById('list-view');
+    const filterView = document.getElementById('filter-view');
+    const filterContainer = document.getElementById('filter-container');
     const historyTableBody = document.getElementById('history-table-body');
 
     const tabLearn = document.getElementById('tab-learn');
     const tabTest = document.getElementById('tab-test');
+    const tabFilter = document.getElementById('tab-filter');
     const tabStats = document.getElementById('tab-stats');
     const tabList = document.getElementById('tab-list');
 
     function init() {
         loadProgress();
+        if (enabledTerms.length === 0) {
+            enabledTerms = flashcards.map(c => c.term); // Enable all by default
+        }
         if (studyDeck.length === 0) {
             shuffleDeck();
         }
@@ -542,8 +617,10 @@
         switchTab(currentTab);
     }
 
+    // --- Deck Core Mechanics ---
     function shuffleDeck() {
-        studyDeck = [...flashcards];
+        const allowedCards = flashcards.filter(c => enabledTerms.includes(c.term));
+        studyDeck = [...allowedCards];
         for (let i = studyDeck.length - 1; i > 0; i--) {
             const j = Math.floor(Math.random() * (i + 1));
             [studyDeck[i], studyDeck[j]] = [studyDeck[j], studyDeck[i]];
@@ -557,7 +634,8 @@
             tab: currentTab,
             direction: dirSelect.value,
             stats: wordStats,
-            deckOrder: studyDeck.map(c => c.term)
+            deckOrder: studyDeck.map(c => c.term),
+            enabledTerms: enabledTerms
         };
         localStorage.setItem(cacheKey, JSON.stringify(state));
     }
@@ -570,44 +648,183 @@
             currentTab = state.tab || 'learn';
             dirSelect.value = state.direction || 'mixed';
             wordStats = state.stats || {};
+            enabledTerms = state.enabledTerms || [];
             
             if (state.deckOrder) {
                 studyDeck = state.deckOrder.map(term => flashcards.find(c => c.term === term)).filter(Boolean);
-                if (studyDeck.length !== flashcards.length) shuffleDeck();
+                // Fallback if mismatch
+                if (studyDeck.length !== enabledTerms.length) shuffleDeck();
             }
         }
     }
 
-    // --- Export & Import ---
+    // --- Tab Management ---
+    function switchTab(tabId) {
+        currentTab = tabId;
+        
+        tabLearn.classList.remove('active');
+        tabTest.classList.remove('active');
+        tabFilter.classList.remove('active');
+        tabStats.classList.remove('active');
+        tabList.classList.remove('active');
+
+        cardView.style.display = 'none';
+        statsView.style.display = 'none';
+        listView.style.display = 'none';
+        filterView.style.display = 'none';
+        learnControls.style.display = 'none';
+        testControls.style.display = 'none';
+
+        if (tabId === 'learn') {
+            tabLearn.classList.add('active');
+            cardView.style.display = 'flex';
+            learnControls.style.display = 'flex';
+            cardContainer.style.pointerEvents = 'auto'; 
+            flipHint.style.display = 'block';
+        } else if (tabId === 'test') {
+            tabTest.classList.add('active');
+            cardView.style.display = 'flex';
+            testControls.style.display = 'block';
+            cardContainer.style.pointerEvents = 'none'; 
+            flipHint.style.display = 'none';
+            resetTestUI();
+        } else if (tabId === 'filter') {
+            tabFilter.classList.add('active');
+            filterView.style.display = 'block';
+            renderFilterUI();
+        } else if (tabId === 'stats') {
+            tabStats.classList.add('active');
+            statsView.style.display = 'block';
+            populateHistoryTable();
+        } else if (tabId === 'list') {
+            tabList.classList.add('active');
+            listView.style.display = 'flex';
+            populateListView();
+        }
+
+        saveProgress();
+        if(tabId === 'learn' || tabId === 'test') updateUI();
+    }
+
+    // --- Filter UI ---
+    function romanToInt(s) {
+        if(!s) return 999;
+        const romanMap = {I:1, V:5, X:10, L:50, C:100, D:500, M:1000};
+        let num = 0;
+        for(let i=0; i<s.length; i++) {
+            if(i > 0 && romanMap[s[i]] > romanMap[s[i-1]]) {
+                num += romanMap[s[i]] - 2*romanMap[s[i-1]];
+            } else {
+                num += romanMap[s[i]] || 0;
+            }
+        }
+        return num || 999;
+    }
+
+    function renderFilterUI() {
+        filterContainer.innerHTML = '';
+        
+        // Group terms by lesson
+        const grouped = {};
+        flashcards.forEach(c => {
+            const l = (c.lesson && c.lesson !== "Lesson") ? c.lesson : "Other / General";
+            if(!grouped[l]) grouped[l] = [];
+            grouped[l].push(c.term);
+        });
+        
+        // Sort lessons chronologically based on Roman numerals
+        const sortedLessons = Object.keys(grouped).sort((a,b) => {
+            const numA = romanToInt(a.replace('Lesson ', ''));
+            const numB = romanToInt(b.replace('Lesson ', ''));
+            return numA - numB;
+        });
+        
+        sortedLessons.forEach(lesson => {
+            const terms = grouped[lesson];
+            const allEnabled = terms.every(t => enabledTerms.includes(t));
+            
+            const groupDiv = document.createElement('div');
+            groupDiv.className = 'filter-group';
+            
+            let termsHTML = terms.map(term => {
+                const isChecked = enabledTerms.includes(term) ? 'checked' : '';
+                return `
+                    <label>
+                        <input type="checkbox" class="term-cb" value="${term}" ${isChecked} onchange="updateLessonCb('${lesson.replace(/ /g, '-')}')"> 
+                        ${term}
+                    </label>`;
+            }).join('');
+            
+            const safeLessonId = lesson.replace(/ /g, '-');
+            groupDiv.innerHTML = `
+                <div class="filter-lesson-title">
+                    <input type="checkbox" id="cb-lesson-${safeLessonId}" ${allEnabled ? 'checked' : ''} onchange="toggleLessonCb('${safeLessonId}', this.checked)">
+                    <label for="cb-lesson-${safeLessonId}">${lesson}</label>
+                </div>
+                <div class="filter-terms" id="terms-${safeLessonId}">
+                    ${termsHTML}
+                </div>
+            `;
+            filterContainer.appendChild(groupDiv);
+        });
+    }
+
+    window.toggleLessonCb = function(safeLessonId, isChecked) {
+        const container = document.getElementById(`terms-${safeLessonId}`);
+        const checkboxes = container.querySelectorAll('.term-cb');
+        checkboxes.forEach(cb => cb.checked = isChecked);
+    }
+
+    window.updateLessonCb = function(safeLessonId) {
+        const container = document.getElementById(`terms-${safeLessonId}`);
+        const checkboxes = container.querySelectorAll('.term-cb');
+        const allChecked = Array.from(checkboxes).every(cb => cb.checked);
+        document.getElementById(`cb-lesson-${safeLessonId}`).checked = allChecked;
+    }
+
+    window.setAllFilters = function(state) {
+        document.querySelectorAll('.term-cb').forEach(cb => cb.checked = state);
+        document.querySelectorAll('.filter-lesson-title input').forEach(cb => cb.checked = state);
+    }
+
+    window.applyFiltersAndRestart = function() {
+        const selected = Array.from(document.querySelectorAll('.term-cb:checked')).map(cb => cb.value);
+        if (selected.length === 0) {
+            alert("You must select at least one card to generate a deck!");
+            return;
+        }
+        enabledTerms = selected;
+        shuffleDeck();
+        saveProgress();
+        switchTab('learn');
+        alert(`Deck updated! Now studying ${studyDeck.length} cards.`);
+    }
+
+
+    // --- Global Controls ---
     function exportData() {
         const data = localStorage.getItem(cacheKey);
         if (!data || Object.keys(wordStats).length === 0) {
             alert("No significant data to export yet!");
             return;
         }
-        
         const blob = new Blob([data], { type: "application/json" });
         const url = URL.createObjectURL(blob);
-        
         const a = document.createElement('a');
         a.href = url;
         const date = new Date().toISOString().split('T')[0];
         a.download = `rhetoric_backup_${date}.json`;
         document.body.appendChild(a);
         a.click();
-        
         document.body.removeChild(a);
         URL.revokeObjectURL(url);
     }
 
-    function triggerImport() {
-        document.getElementById('file-import').click();
-    }
+    function triggerImport() { document.getElementById('file-import').click(); }
 
     function handleImport(event) {
         const file = event.target.files[0];
         if (!file) return;
-
         const reader = new FileReader();
         reader.onload = function(e) {
             try {
@@ -617,12 +834,8 @@
                     alert("Data imported successfully!");
                     init();
                     if (currentTab === 'stats') populateHistoryTable();
-                } else {
-                    alert("Invalid backup file structure.");
-                }
-            } catch (err) {
-                alert("Error reading file. Ensure it is a valid JSON backup.");
-            }
+                } else { alert("Invalid backup file structure."); }
+            } catch (err) { alert("Error reading file. Ensure it is a valid JSON backup."); }
         };
         reader.readAsText(file);
         event.target.value = ''; 
@@ -642,56 +855,17 @@
             localStorage.removeItem(cacheKey);
             currentIndex = 0;
             wordStats = {};
+            enabledTerms = flashcards.map(c => c.term);
             shuffleDeck();
             setCardDirection();
             resetTestUI();
             updateUI();
             if (currentTab === 'stats') populateHistoryTable();
+            if (currentTab === 'filter') renderFilterUI();
         }
     }
 
-    // --- Tab Management ---
-    function switchTab(tabId) {
-        currentTab = tabId;
-        
-        tabLearn.classList.remove('active');
-        tabTest.classList.remove('active');
-        tabStats.classList.remove('active');
-        tabList.classList.remove('active');
-
-        cardView.style.display = 'none';
-        statsView.style.display = 'none';
-        listView.style.display = 'none';
-        learnControls.style.display = 'none';
-        testControls.style.display = 'none';
-
-        if (tabId === 'learn') {
-            tabLearn.classList.add('active');
-            cardView.style.display = 'flex';
-            learnControls.style.display = 'flex';
-            cardContainer.style.pointerEvents = 'auto'; 
-            flipHint.style.display = 'block';
-        } else if (tabId === 'test') {
-            tabTest.classList.add('active');
-            cardView.style.display = 'flex';
-            testControls.style.display = 'block';
-            cardContainer.style.pointerEvents = 'none'; 
-            flipHint.style.display = 'none';
-            resetTestUI();
-        } else if (tabId === 'stats') {
-            tabStats.classList.add('active');
-            statsView.style.display = 'block';
-            populateHistoryTable();
-        } else if (tabId === 'list') {
-            tabList.classList.add('active');
-            listView.style.display = 'flex';
-            populateListView();
-        }
-
-        saveProgress();
-        if(tabId === 'learn' || tabId === 'test') updateUI();
-    }
-
+    // --- Study Mechanics ---
     function setCardDirection() {
         if (dirSelect.value === 'mixed') {
             currentIsTermToDef = Math.random() > 0.5; 
@@ -718,12 +892,13 @@
     }
 
     function updateUI() {
+        if (studyDeck.length === 0) return; // Prevent errors if filtering failed
+        
         flashcard.classList.remove('is-flipped');
         const card = studyDeck[currentIndex];
         
         cardFrontLesson.textContent = card.lesson;
         cardBackLesson.textContent = card.lesson;
-        
         cardFrontText.textContent = currentIsTermToDef ? card.term : card.def;
         cardBackText.textContent = currentIsTermToDef ? card.def : card.term;
 
@@ -737,9 +912,9 @@
         progressText.textContent = `Card ${currentIndex + 1} of ${studyDeck.length}`;
         
         let masteredCount = 0;
-        for (const term in wordStats) {
-            ensureStats(term);
-            if ((wordStats[term].learn.correct + wordStats[term].test.correct) > 0) masteredCount++;
+        for (let c of studyDeck) {
+            ensureStats(c.term);
+            if ((wordStats[c.term].learn.correct + wordStats[c.term].test.correct) > 0) masteredCount++;
         }
         masteryText.innerHTML = `Mastered: <span class="stats-highlight">${masteredCount}</span> / ${studyDeck.length}`;
 
@@ -747,9 +922,7 @@
     }
 
     function flipCard() {
-        if (currentTab === 'learn') {
-            flashcard.classList.toggle('is-flipped');
-        }
+        if (currentTab === 'learn') flashcard.classList.toggle('is-flipped');
     }
 
     function nextCard() {
@@ -759,7 +932,7 @@
             resetTestUI();
             updateUI();
         } else {
-            alert("You have reached the end of the deck! Reshuffling and restarting...");
+            alert("You have reached the end of your filtered deck! Reshuffling and restarting...");
             resetSession(); 
         }
     }
@@ -769,7 +942,6 @@
         updateUI(); 
     }
 
-    // --- Learn Mode Controls ---
     function markCorrect() {
         const term = studyDeck[currentIndex].term;
         ensureStats(term);
@@ -786,11 +958,8 @@
         nextCard();
     }
 
-    function skipCard() {
-        nextCard();
-    }
+    function skipCard() { nextCard(); }
 
-    // --- Test Mode Controls ---
     function resetTestUI() {
         testInput.value = '';
         testFeedback.textContent = '';
@@ -802,9 +971,7 @@
         document.getElementById('btn-submit').disabled = false;
         document.getElementById('btn-giveup').disabled = false;
         
-        if(currentTab === 'test') {
-            setTimeout(() => testInput.focus(), 50);
-        }
+        if(currentTab === 'test') { setTimeout(() => testInput.focus(), 50); }
     }
 
     function disableTestButtons() {
@@ -845,14 +1012,10 @@
         flashcard.classList.add('is-flipped');
         disableTestButtons();
 
-        setTimeout(() => {
-            nextCard();
-        }, 3500);
+        setTimeout(() => nextCard(), 3500);
     }
 
-    function handleEnter(e) {
-        if (e.key === 'Enter') checkAnswer();
-    }
+    function handleEnter(e) { if (e.key === 'Enter') checkAnswer(); }
 
     function getEditDistance(a, b) {
         if(a.length === 0) return b.length; 
@@ -865,11 +1028,7 @@
                 if(b.charAt(i-1) === a.charAt(j-1)){
                     matrix[i][j] = matrix[i-1][j-1];
                 } else {
-                    matrix[i][j] = Math.min(
-                        matrix[i-1][j-1] + 1, 
-                        Math.min(matrix[i][j-1] + 1, 
-                        matrix[i-1][j] + 1) 
-                    );
+                    matrix[i][j] = Math.min(matrix[i-1][j-1] + 1, Math.min(matrix[i][j-1] + 1, matrix[i-1][j] + 1));
                 }
             }
         }
@@ -904,22 +1063,13 @@
         let isCorrect = false;
         let typoAlert = false;
 
-        if (cleanUser === cleanCorrect) {
-            isCorrect = true;
-        } else if (dist <= allowedErrors) {
-            isCorrect = true;
-            typoAlert = true;
-        } else if (cleanCorrect.includes(cleanUser) && cleanUser.length > 4) {
-            isCorrect = true;
-        }
+        if (cleanUser === cleanCorrect) { isCorrect = true; } 
+        else if (dist <= allowedErrors) { isCorrect = true; typoAlert = true; } 
+        else if (cleanCorrect.includes(cleanUser) && cleanUser.length > 4) { isCorrect = true; }
 
         if (isCorrect) {
             testFeedback.style.color = '#a8ffb2';
-            if (typoAlert) {
-                testFeedback.textContent = `Correct! (Typo allowed. Exact answer: ${correctAnswer})`;
-            } else {
-                testFeedback.textContent = "Correct!";
-            }
+            testFeedback.textContent = typoAlert ? `Correct! (Typo allowed. Exact answer: ${correctAnswer})` : "Correct!";
             
             wordStats[card.term].test.correct++;
             saveProgress();
@@ -928,9 +1078,7 @@
             flashcard.classList.add('is-flipped');
             disableTestButtons();
 
-            setTimeout(() => {
-                nextCard();
-            }, 2500);
+            setTimeout(() => nextCard(), 2500);
         } else {
             testFeedback.style.color = '#ffb2b2';
             testFeedback.textContent = `Incorrect. Try again, ask for a hint, or Give Up.`;
@@ -951,16 +1099,10 @@
         flashcards.forEach(card => {
             ensureStats(card.term);
             const stats = wordStats[card.term];
-            
             const totalAttempts = stats.learn.correct + stats.learn.wrong + stats.test.correct + stats.test.wrong;
             const totalCorrect = stats.learn.correct + stats.test.correct;
             
-            let accuracy = "0%";
-            if (totalAttempts > 0) {
-                accuracy = Math.round((totalCorrect / totalAttempts) * 100) + "%";
-            } else {
-                accuracy = "-";
-            }
+            let accuracy = totalAttempts > 0 ? Math.round((totalCorrect / totalAttempts) * 100) + "%" : "-";
 
             const tr = document.createElement('tr');
             tr.innerHTML = `
