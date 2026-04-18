@@ -337,8 +337,8 @@
         </header>
 
         <div class="tabs">
-            <div class="tab active" id="tab-learn" onclick="switchTab('learn')">Learn</div>
-            <div class="tab" id="tab-test" onclick="switchTab('test')">Test</div>
+            <div class="tab active" id="tab-learn" onclick="switchTab('learn')">Learn (Cards)</div>
+            <div class="tab" id="tab-test" onclick="switchTab('test')">Test (Typing)</div>
             <div class="tab" id="tab-stats" onclick="switchTab('stats')">Stats</div>
             <div class="tab" id="tab-list" onclick="switchTab('list')">List (All)</div>
         </div>
@@ -479,13 +479,14 @@
         { term: "Zeugma", def: "The yoking of a verb to more than one subject while grammatically it strictly refers to only one of them.", example: "\"The aim of a ship's captain is a successful voyage; a doctor's, health; a general's, victory. ( The Republic  by Cicero)\"" }
     ];
 
+    let studyDeck = []; // The randomized deck used for studying
     let currentIndex = 0;
     let currentIsTermToDef = true; 
     let wordStats = {}; 
     let currentTab = 'learn';
     let lastWrongAnswer = "";
 
-    const cacheKey = 'rhetoric_flashcard_progress_v7';
+    const cacheKey = 'rhetoric_flashcard_progress_v8'; // Bumped cache key
 
     // DOM Elements
     const cardFrontText = document.getElementById('card-front-text');
@@ -520,8 +521,20 @@
 
     function init() {
         loadProgress();
+        if (studyDeck.length === 0) {
+            shuffleDeck();
+        }
         setCardDirection();
         switchTab(currentTab);
+    }
+
+    function shuffleDeck() {
+        studyDeck = [...flashcards];
+        for (let i = studyDeck.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [studyDeck[i], studyDeck[j]] = [studyDeck[j], studyDeck[i]];
+        }
+        currentIndex = 0;
     }
 
     function saveProgress() {
@@ -529,7 +542,8 @@
             index: currentIndex,
             tab: currentTab,
             direction: dirSelect.value,
-            stats: wordStats
+            stats: wordStats,
+            deckOrder: studyDeck.map(c => c.term) // Save randomized order
         };
         localStorage.setItem(cacheKey, JSON.stringify(state));
     }
@@ -542,6 +556,12 @@
             currentTab = state.tab || 'learn';
             dirSelect.value = state.direction || 'mixed';
             wordStats = state.stats || {};
+            
+            if (state.deckOrder) {
+                // Rebuild study deck from saved order
+                studyDeck = state.deckOrder.map(term => flashcards.find(c => c.term === term)).filter(Boolean);
+                if (studyDeck.length !== flashcards.length) shuffleDeck(); // safety fallback
+            }
         }
     }
 
@@ -596,11 +616,12 @@
     }
 
     function resetSession() {
-        currentIndex = 0;
+        shuffleDeck();
         setCardDirection();
         resetTestUI();
         updateUI();
         saveProgress();
+        alert("Deck reshuffled and restarted from the beginning!");
     }
 
     function wipeData() {
@@ -608,6 +629,7 @@
             localStorage.removeItem(cacheKey);
             currentIndex = 0;
             wordStats = {};
+            shuffleDeck();
             setCardDirection();
             resetTestUI();
             updateUI();
@@ -684,7 +706,8 @@
 
     function updateUI() {
         flashcard.classList.remove('is-flipped');
-        const card = flashcards[currentIndex];
+        // Load card from the randomized study deck
+        const card = studyDeck[currentIndex];
         
         cardFrontText.textContent = currentIsTermToDef ? card.term : card.def;
         cardBackText.textContent = currentIsTermToDef ? card.def : card.term;
@@ -694,16 +717,16 @@
         const isMastered = (wordStats[card.term].learn.correct + wordStats[card.term].test.correct) > 0;
         badges.forEach(badge => badge.style.display = isMastered ? 'block' : 'none');
 
-        const percent = ((currentIndex + 1) / flashcards.length) * 100;
+        const percent = ((currentIndex + 1) / studyDeck.length) * 100;
         progressBar.style.width = `${percent}%`;
-        progressText.textContent = `Card ${currentIndex + 1} of ${flashcards.length}`;
+        progressText.textContent = `Card ${currentIndex + 1} of ${studyDeck.length}`;
         
         let masteredCount = 0;
         for (const term in wordStats) {
             ensureStats(term);
             if ((wordStats[term].learn.correct + wordStats[term].test.correct) > 0) masteredCount++;
         }
-        masteryText.innerHTML = `Mastered: <span class="stats-highlight">${masteredCount}</span> / ${flashcards.length}`;
+        masteryText.innerHTML = `Mastered: <span class="stats-highlight">${masteredCount}</span> / ${studyDeck.length}`;
 
         saveProgress();
     }
@@ -715,17 +738,14 @@
     }
 
     function nextCard() {
-        if (currentIndex < flashcards.length - 1) {
+        if (currentIndex < studyDeck.length - 1) {
             currentIndex++;
             setCardDirection(); 
             resetTestUI();
             updateUI();
         } else {
-            alert("You have reached the end of the flashcards! Restarting from beginning.");
-            currentIndex = 0;
-            setCardDirection();
-            resetTestUI();
-            updateUI();
+            alert("You have reached the end of the deck! Reshuffling and restarting...");
+            resetSession(); // Automatically reshuffles and goes to index 0
         }
     }
 
@@ -736,7 +756,7 @@
 
     // --- Learn Mode Controls ---
     function markCorrect() {
-        const term = flashcards[currentIndex].term;
+        const term = studyDeck[currentIndex].term;
         ensureStats(term);
         wordStats[term].learn.correct++;
         saveProgress();
@@ -744,7 +764,7 @@
     }
 
     function markWrong() {
-        const term = flashcards[currentIndex].term;
+        const term = studyDeck[currentIndex].term;
         ensureStats(term);
         wordStats[term].learn.wrong++;
         saveProgress();
@@ -780,7 +800,7 @@
     }
 
     function showHint() {
-        const card = flashcards[currentIndex];
+        const card = studyDeck[currentIndex];
         const correctAnswer = currentIsTermToDef ? card.def : card.term;
         let hintStr = "";
         
@@ -796,7 +816,7 @@
     }
 
     function giveUp() {
-        const card = flashcards[currentIndex];
+        const card = studyDeck[currentIndex];
         const correctAnswer = currentIsTermToDef ? card.def : card.term;
         
         testFeedback.style.color = '#ffb2b2';
@@ -842,7 +862,7 @@
     }
 
     function checkAnswer() {
-        const card = flashcards[currentIndex];
+        const card = studyDeck[currentIndex];
         const correctAnswer = currentIsTermToDef ? card.def : card.term;
         const userAnswer = testInput.value.trim().toLowerCase();
         
@@ -913,6 +933,7 @@
     // --- Statistics Rendering ---
     function populateHistoryTable() {
         historyTableBody.innerHTML = '';
+        // Always loop over original alphabetized flashcards for the Stats Table
         flashcards.forEach(card => {
             ensureStats(card.term);
             const stats = wordStats[card.term];
@@ -943,6 +964,7 @@
     // --- List View Rendering ---
     function populateListView() {
         listView.innerHTML = '';
+        // Always loop over original alphabetized flashcards for the Master List
         flashcards.forEach(card => {
             const el = document.createElement('div');
             el.className = 'list-card';
