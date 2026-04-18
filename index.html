@@ -191,6 +191,7 @@
                     <option value="test">Test Mode</option>
                 </select>
                 <select id="direction-select" onchange="changeDirection()">
+                    <option value="mixed" selected>Mixed (Auto)</option>
                     <option value="term-def">Term → Def</option>
                     <option value="def-term">Def → Term</option>
                 </select>
@@ -287,6 +288,7 @@
     ];
 
     let currentIndex = 0;
+    let currentIsTermToDef = true; // Tracks the current card's layout
     const cacheKey = 'rhetoric_flashcard_progress';
 
     const cardFront = document.getElementById('card-front');
@@ -304,6 +306,7 @@
 
     function init() {
         loadProgress();
+        setCardDirection();
         updateUI();
     }
 
@@ -328,19 +331,29 @@
 
     function resetProgress() {
         currentIndex = 0;
+        setCardDirection();
         saveProgress();
         updateUI();
         testFeedback.textContent = "";
         testInput.value = "";
     }
 
+    // Determine the direction for the specific card based on dropdown
+    function setCardDirection() {
+        if (dirSelect.value === 'mixed') {
+            currentIsTermToDef = Math.random() > 0.5; // 50% chance of either layout
+        } else {
+            currentIsTermToDef = (dirSelect.value === 'term-def');
+        }
+    }
+
     function updateUI() {
         flashcard.classList.remove('is-flipped');
         const card = flashcards[currentIndex];
-        const isTermToDef = dirSelect.value === 'term-def';
         
-        cardFront.textContent = isTermToDef ? card.term : card.def;
-        cardBack.textContent = isTermToDef ? card.def : card.term;
+        // Use the locked-in direction for this specific card
+        cardFront.textContent = currentIsTermToDef ? card.term : card.def;
+        cardBack.textContent = currentIsTermToDef ? card.def : card.term;
 
         const percent = ((currentIndex + 1) / flashcards.length) * 100;
         progressBar.style.width = `${percent}%`;
@@ -370,6 +383,7 @@
     function nextCard() {
         if (currentIndex < flashcards.length - 1) {
             currentIndex++;
+            setCardDirection(); // Roll a new direction for the next card
             updateUI();
         }
     }
@@ -377,26 +391,33 @@
     function prevCard() {
         if (currentIndex > 0) {
             currentIndex--;
+            setCardDirection(); // Roll a new direction for the previous card
             updateUI();
         }
     }
 
-    function changeMode() { updateUI(); }
-    function changeDirection() { updateUI(); }
+    function changeMode() { 
+        updateUI(); 
+    }
+    
+    function changeDirection() { 
+        setCardDirection(); // Update immediately if user changes the dropdown manually
+        updateUI(); 
+    }
 
     function handleEnter(e) {
         if (e.key === 'Enter') checkAnswer();
     }
 
     function checkAnswer() {
-        const isTermToDef = dirSelect.value === 'term-def';
-        const correctAnswer = isTermToDef ? flashcards[currentIndex].def : flashcards[currentIndex].term;
+        // Evaluate based on the locked-in direction
+        const correctAnswer = currentIsTermToDef ? flashcards[currentIndex].def : flashcards[currentIndex].term;
         const userAnswer = testInput.value.trim().toLowerCase();
         
         const cleanCorrect = correctAnswer.toLowerCase().replace(/[.,\/#!$%\^&\*;:{}=\-_`~()]/g,"");
         const cleanUser = userAnswer.replace(/[.,\/#!$%\^&\*;:{}=\-_`~()]/g,"");
 
-        if (cleanUser === cleanCorrect || cleanCorrect.includes(cleanUser) && cleanUser.length > 4) {
+        if (cleanUser === cleanCorrect || (cleanCorrect.includes(cleanUser) && cleanUser.length > 4)) {
             testFeedback.style.color = '#a8ffb2';
             testFeedback.textContent = "Correct!";
             flashcard.classList.add('is-flipped');
