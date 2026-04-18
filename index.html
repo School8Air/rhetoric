@@ -48,7 +48,7 @@
             padding: 30px;
             box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
             width: 100%;
-            max-width: 700px;
+            max-width: 750px;
             text-align: center;
             position: relative;
             max-height: 95vh;
@@ -106,6 +106,9 @@
 
         .btn-success { background: rgba(46, 204, 113, 0.2) !important; }
         .btn-success:hover:not(:disabled) { background: rgba(46, 204, 113, 0.4) !important; }
+
+        .btn-info { background: rgba(52, 152, 219, 0.2) !important; }
+        .btn-info:hover:not(:disabled) { background: rgba(52, 152, 219, 0.4) !important; }
 
         /* Tabs System */
         .tabs {
@@ -307,6 +310,10 @@
             font-size: 16px;
             font-weight: bold;
         }
+
+        #file-import {
+            display: none;
+        }
     </style>
 </head>
 <body>
@@ -322,8 +329,11 @@
                     <option value="def-term">Def → Term</option>
                 </select>
                 <button onclick="resetSession()">Restart</button>
-                <button class="btn-danger" onclick="wipeData()">Wipe Data</button>
+                <button class="btn-info" onclick="exportData()">Export</button>
+                <button class="btn-info" onclick="triggerImport()">Import</button>
+                <button class="btn-danger" onclick="wipeData()">Wipe</button>
             </div>
+            <input type="file" id="file-import" accept=".json" onchange="handleImport(event)">
         </header>
 
         <div class="tabs">
@@ -526,6 +536,57 @@
             dirSelect.value = state.direction || 'mixed';
             wordStats = state.stats || {};
         }
+    }
+
+    // --- Export & Import ---
+    function exportData() {
+        const data = localStorage.getItem(cacheKey);
+        if (!data || Object.keys(wordStats).length === 0) {
+            alert("No significant data to export yet!");
+            return;
+        }
+        
+        const blob = new Blob([data], { type: "application/json" });
+        const url = URL.createObjectURL(blob);
+        
+        const a = document.createElement('a');
+        a.href = url;
+        const date = new Date().toISOString().split('T')[0];
+        a.download = `rhetoric_backup_${date}.json`;
+        document.body.appendChild(a);
+        a.click();
+        
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+    }
+
+    function triggerImport() {
+        document.getElementById('file-import').click();
+    }
+
+    function handleImport(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            try {
+                const importedData = JSON.parse(e.target.result);
+                if (importedData && importedData.stats) {
+                    localStorage.setItem(cacheKey, JSON.stringify(importedData));
+                    alert("Data imported successfully!");
+                    // Re-initialize app with new data
+                    init();
+                    if (currentTab === 'stats') populateHistoryTable();
+                } else {
+                    alert("Invalid backup file structure.");
+                }
+            } catch (err) {
+                alert("Error reading file. Ensure it is a valid JSON backup.");
+            }
+        };
+        reader.readAsText(file);
+        event.target.value = ''; // Reset input
     }
 
     function resetSession() {
@@ -757,9 +818,9 @@
                     matrix[i][j] = matrix[i-1][j-1];
                 } else {
                     matrix[i][j] = Math.min(
-                        matrix[i-1][j-1] + 1, // substitution
-                        Math.min(matrix[i][j-1] + 1, // insertion
-                        matrix[i-1][j] + 1) // deletion
+                        matrix[i-1][j-1] + 1, 
+                        Math.min(matrix[i][j-1] + 1, 
+                        matrix[i-1][j] + 1) 
                     );
                 }
             }
@@ -772,14 +833,12 @@
         const correctAnswer = currentIsTermToDef ? card.def : card.term;
         const userAnswer = testInput.value.trim().toLowerCase();
         
-        // Validation: Empty
         if (userAnswer === "") {
             testFeedback.style.color = '#ffd166';
             testFeedback.textContent = "Please type an answer before submitting.";
             return;
         }
 
-        // Validation: Repeat Wrong
         if (userAnswer === lastWrongAnswer) {
             testFeedback.style.color = '#ffd166';
             testFeedback.textContent = "You just tried that! Guess something else or use a hint.";
@@ -791,9 +850,7 @@
 
         ensureStats(card.term);
 
-        // Forgiving Spelling Logic
         const dist = getEditDistance(cleanUser, cleanCorrect);
-        // Allow ~1 error per 6 characters
         const allowedErrors = Math.max(1, Math.floor(cleanCorrect.length / 6)); 
         
         let isCorrect = false;
@@ -805,7 +862,6 @@
             isCorrect = true;
             typoAlert = true;
         } else if (cleanCorrect.includes(cleanUser) && cleanUser.length > 4) {
-            // Retain the fallback for long definitions
             isCorrect = true;
         }
 
@@ -831,7 +887,7 @@
             testFeedback.style.color = '#ffb2b2';
             testFeedback.textContent = `Incorrect. Try again, ask for a hint, or Give Up.`;
             
-            lastWrongAnswer = userAnswer; // Record to block duplicates
+            lastWrongAnswer = userAnswer;
             wordStats[card.term].test.wrong++;
             saveProgress();
             renderCardStats(card.term);
