@@ -103,6 +103,13 @@
             background: rgba(255, 50, 50, 0.4) !important;
         }
 
+        .btn-success {
+            background: rgba(46, 204, 113, 0.2) !important;
+        }
+        .btn-success:hover {
+            background: rgba(46, 204, 113, 0.4) !important;
+        }
+
         /* Tabs System */
         .tabs {
             display: flex;
@@ -222,6 +229,7 @@
             border-radius: 15px;
             font-size: 24px;
             line-height: 1.4;
+            cursor: pointer;
         }
 
         .card-back {
@@ -309,15 +317,15 @@
 
         #learn-controls {
             display: flex;
-            justify-content: space-between;
+            gap: 10px;
             width: 100%;
         }
 
         #learn-controls button {
             flex: 1;
-            margin: 0 5px;
-            padding: 12px;
+            padding: 15px 10px;
             font-size: 16px;
+            font-weight: bold;
         }
     </style>
 </head>
@@ -361,6 +369,7 @@
                         <div class="card-history-stats" id="card-front-stats">
                             <span class="stat-c">Correct: 0</span> | <span class="stat-w">Wrong: 0</span>
                         </div>
+                        <div style="position: absolute; top: 10px; left: 15px; font-size: 12px; color: rgba(255,255,255,0.5);">Click to flip</div>
                     </div>
                     <div class="card-face card-back">
                         <div class="mastery-badge">⭐ Mastered</div>
@@ -372,15 +381,16 @@
                 </div>
             </div>
 
+            <div id="learn-controls" class="controls">
+                <button class="button" onclick="skipCard()">Skip</button>
+                <button class="button btn-danger" onclick="markWrong()">Wrong</button>
+                <button class="button btn-success" onclick="markCorrect()">Correct</button>
+            </div>
+
             <div id="test-controls">
                 <input type="text" id="test-input" placeholder="Type your answer here..." onkeypress="handleEnter(event)">
                 <div id="test-feedback"></div>
                 <button class="controls button" onclick="checkAnswer()" style="width: 100%; padding: 15px;">Submit Answer</button>
-            </div>
-
-            <div id="learn-controls">
-                <button class="controls button" onclick="prevCard()">Previous</button>
-                <button class="controls button" onclick="nextCard()">Next</button>
             </div>
         </div>
 
@@ -470,7 +480,7 @@
     let wordStats = {}; 
     let currentTab = 'learn';
 
-    const cacheKey = 'rhetoric_flashcard_progress_v3';
+    const cacheKey = 'rhetoric_flashcard_progress_v4';
 
     // DOM Elements
     const cardFrontText = document.getElementById('card-front-text');
@@ -503,7 +513,7 @@
     function init() {
         loadProgress();
         setCardDirection();
-        switchTab(currentTab); // This will call updateUI
+        switchTab(currentTab);
     }
 
     function saveProgress() {
@@ -552,12 +562,10 @@
     function switchTab(tabId) {
         currentTab = tabId;
         
-        // Remove active class from all
         tabLearn.classList.remove('active');
         tabTest.classList.remove('active');
         tabStats.classList.remove('active');
 
-        // Hide all views
         cardView.style.display = 'none';
         statsView.style.display = 'none';
         learnControls.style.display = 'none';
@@ -572,7 +580,7 @@
             tabTest.classList.add('active');
             cardView.style.display = 'flex';
             testControls.style.display = 'block';
-            cardContainer.style.pointerEvents = 'none'; // disable flipping
+            cardContainer.style.pointerEvents = 'none'; // disable flipping to prevent cheating
             testInput.value = '';
             testFeedback.textContent = '';
             setTimeout(() => testInput.focus(), 50);
@@ -601,7 +609,6 @@
         cardFrontText.textContent = currentIsTermToDef ? card.term : card.def;
         cardBackText.textContent = currentIsTermToDef ? card.def : card.term;
 
-        // Fetch stats for current card
         const stats = wordStats[card.term] || { correct: 0, wrong: 0 };
         const statHTML = `<span class="stat-c">Correct: ${stats.correct}</span> | <span class="stat-w">Wrong: ${stats.wrong}</span>`;
         cardFrontStats.innerHTML = statHTML;
@@ -612,7 +619,6 @@
             badge.style.display = isMastered ? 'block' : 'none';
         });
 
-        // Update Progress
         const percent = ((currentIndex + 1) / flashcards.length) * 100;
         progressBar.style.width = `${percent}%`;
         progressText.textContent = `Card ${currentIndex + 1} of ${flashcards.length}`;
@@ -637,14 +643,8 @@
             currentIndex++;
             setCardDirection(); 
             updateUI();
-        }
-    }
-
-    function prevCard() {
-        if (currentIndex > 0) {
-            currentIndex--;
-            setCardDirection(); 
-            updateUI();
+        } else {
+            alert("You have reached the end of the flashcards!");
         }
     }
 
@@ -653,6 +653,33 @@
         updateUI(); 
     }
 
+    // --- Learn Mode Self-Grading ---
+    function ensureStats(term) {
+        if (!wordStats[term]) wordStats[term] = { correct: 0, wrong: 0 };
+    }
+
+    function markCorrect() {
+        const term = flashcards[currentIndex].term;
+        ensureStats(term);
+        wordStats[term].correct++;
+        saveProgress();
+        nextCard();
+    }
+
+    function markWrong() {
+        const term = flashcards[currentIndex].term;
+        ensureStats(term);
+        wordStats[term].wrong++;
+        saveProgress();
+        nextCard();
+    }
+
+    function skipCard() {
+        // Skips without recording a stat
+        nextCard();
+    }
+
+    // --- Test Mode Typing ---
     function handleEnter(e) {
         if (e.key === 'Enter') checkAnswer();
     }
@@ -665,7 +692,7 @@
         const cleanCorrect = correctAnswer.toLowerCase().replace(/[.,\/#!$%\^&\*;:{}=\-_`~()]/g,"");
         const cleanUser = userAnswer.replace(/[.,\/#!$%\^&\*;:{}=\-_`~()]/g,"");
 
-        if (!wordStats[card.term]) wordStats[card.term] = { correct: 0, wrong: 0 };
+        ensureStats(card.term);
 
         if (cleanUser === cleanCorrect || (cleanCorrect.includes(cleanUser) && cleanUser.length > 4)) {
             testFeedback.style.color = '#a8ffb2';
@@ -691,6 +718,7 @@
         cardBackStats.innerHTML = statHTML;
     }
 
+    // --- Statistics Rendering ---
     function populateHistoryTable() {
         historyTableBody.innerHTML = '';
         flashcards.forEach(card => {
