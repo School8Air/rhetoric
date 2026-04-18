@@ -87,19 +87,9 @@
             transition: background 0.3s ease, opacity 0.3s ease;
         }
 
-        .controls select option {
-            background: #2b2b2b;
-            color: white;
-        }
-
-        .controls select:hover:not(:disabled), .controls button:hover:not(:disabled) {
-            background: rgba(0, 0, 0, 0.4);
-        }
-        
-        .controls button:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-        }
+        .controls select option { background: #2b2b2b; color: white; }
+        .controls select:hover:not(:disabled), .controls button:hover:not(:disabled) { background: rgba(0, 0, 0, 0.4); }
+        .controls button:disabled { opacity: 0.5; cursor: not-allowed; }
 
         .btn-danger { background: rgba(255, 50, 50, 0.2) !important; }
         .btn-danger:hover:not(:disabled) { background: rgba(255, 50, 50, 0.4) !important; }
@@ -120,6 +110,7 @@
             border: 1px solid var(--glass-border);
             overflow: hidden;
             flex-shrink: 0;
+            flex-wrap: wrap;
         }
 
         .tab {
@@ -128,7 +119,9 @@
             text-align: center;
             cursor: pointer;
             font-weight: 500;
+            font-size: 14px;
             transition: background 0.3s ease, font-weight 0.3s ease;
+            min-width: 100px;
         }
 
         .tab.active {
@@ -137,18 +130,12 @@
             box-shadow: inset 0 -3px 0 rgba(255,255,255,0.5);
         }
 
-        .tab:hover:not(.active) {
-            background: rgba(255,255,255,0.1);
-        }
+        .tab:hover:not(.active) { background: rgba(255,255,255,0.1); }
 
         /* Views */
-        #card-view {
-            display: flex;
-            flex-direction: column;
-            width: 100%;
-        }
+        #card-view { display: flex; flex-direction: column; width: 100%; }
 
-        #stats-view {
+        #stats-view, #list-view {
             display: none;
             flex-direction: column;
             width: 100%;
@@ -160,9 +147,24 @@
         }
 
         /* Scrollbar styling */
-        #stats-view::-webkit-scrollbar { width: 8px; }
-        #stats-view::-webkit-scrollbar-track { background: rgba(0,0,0,0.1); border-radius: 4px; }
-        #stats-view::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.3); border-radius: 4px; }
+        #stats-view::-webkit-scrollbar, #list-view::-webkit-scrollbar { width: 8px; }
+        #stats-view::-webkit-scrollbar-track, #list-view::-webkit-scrollbar-track { background: rgba(0,0,0,0.1); border-radius: 4px; }
+        #stats-view::-webkit-scrollbar-thumb, #list-view::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.3); border-radius: 4px; }
+
+        /* Dictionary List View */
+        #list-view { gap: 15px; }
+        
+        .list-card {
+            background: rgba(0, 0, 0, 0.2);
+            border: 1px solid var(--glass-border);
+            border-radius: 10px;
+            padding: 15px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+        }
+        
+        .list-term { font-size: 18px; font-weight: bold; color: #a8ffb2; margin-bottom: 5px; }
+        .list-def { font-size: 15px; margin-bottom: 10px; line-height: 1.4; }
+        .list-ex { font-size: 13px; color: rgba(255,255,255,0.7); font-style: italic; border-left: 2px solid rgba(255,255,255,0.3); padding-left: 10px; }
 
         /* History Table */
         table { width: 100%; border-collapse: collapse; font-size: 14px; }
@@ -311,9 +313,7 @@
             font-weight: bold;
         }
 
-        #file-import {
-            display: none;
-        }
+        #file-import { display: none; }
     </style>
 </head>
 <body>
@@ -337,9 +337,10 @@
         </header>
 
         <div class="tabs">
-            <div class="tab active" id="tab-learn" onclick="switchTab('learn')">Learn (Cards)</div>
-            <div class="tab" id="tab-test" onclick="switchTab('test')">Test (Typing)</div>
-            <div class="tab" id="tab-stats" onclick="switchTab('stats')">Statistics</div>
+            <div class="tab active" id="tab-learn" onclick="switchTab('learn')">Learn</div>
+            <div class="tab" id="tab-test" onclick="switchTab('test')">Test</div>
+            <div class="tab" id="tab-stats" onclick="switchTab('stats')">Stats</div>
+            <div class="tab" id="tab-list" onclick="switchTab('list')">List (All)</div>
         </div>
 
         <div id="card-view">
@@ -408,70 +409,74 @@
             </table>
         </div>
 
+        <div id="list-view">
+            </div>
+
     </div>
 </div>
 
 <script>
+    // Complete Dataset with Terms, Definitions, and Examples
     const flashcards = [
-        { term: "Absolute ellipsis", def: "A phrase or sentence in which the omitted material is not betrayed by the words which remain." },
-        { term: "Anadiplosis", def: "Repetition of an end at the next beginning." },
-        { term: "Anaphora", def: "Repetition at the beginning." },
-        { term: "Anapodoton", def: "The omission of one or more whole clauses which are not logically implied by the remaining text." },
-        { term: "Anastrophe", def: "The reversal of word order." },
-        { term: "Antanaclasis", def: "Repetition in different senses." },
-        { term: "Anthimeria", def: "The substitution of one part of speech for another." },
-        { term: "Antiptosis", def: "The substitution of a prepositional phrase for an adjective." },
-        { term: "Antisthecon", def: "The substitution of one or more letters in a word in an intentional misspelling." },
-        { term: "Antithesis", def: "The repetition of ideas by negation." },
-        { term: "Aphaeresis", def: "The subtraction of letters from the beginning of a word in an intentional misspelling." },
-        { term: "Apocope", def: "Subtraction of letters from the end of a word in an intentional misspelling." },
-        { term: "Aporia", def: "To talk about not being able to talk about something." },
-        { term: "Aposiopesis", def: "The intentional omission of the last part of a sentence or the last part of a thought." },
-        { term: "Asterismos", def: "The addition of a word to emphasize what follows." },
-        { term: "Asyndeton", def: "An omission of a conjunction." },
-        { term: "Auxesis", def: "Arrangement in ascending order." },
-        { term: "Catachresis", def: "An apparently inappropriate substitution of one word for another." },
-        { term: "Chiasmus", def: "Epanodos at the level of the passage." },
-        { term: "Congeries", def: "Repetition using other words." },
-        { term: "Diacope", def: "Repetition with only a word or two between." },
-        { term: "Ellipsis", def: "The general name for the omission of one or more words." },
-        { term: "Enallage", def: "An exchange of words or a substitution of one for another." },
-        { term: "Enthymeme", def: "An abbreviation of a syllogism, where one or more of the premises is missing." },
-        { term: "Epanalepsis", def: "Repetition of the beginning at the end." },
-        { term: "Epanodos", def: "Repetition in reverse order." },
-        { term: "Epanorthosis", def: "Addition by correction." },
-        { term: "Epenthesis", def: "The addition of letters in the middle of the word in a purposeful misspelling." },
-        { term: "Epistrophe", def: "Repetition at the end." },
-        { term: "Epizeuxis", def: "Immediate repetition." },
-        { term: "Gradatio", def: "Repeated repetition of an end at the next beginning." },
-        { term: "Hendiadys", def: "Two or more words used, but one meaning intended." },
-        { term: "Hypallage", def: "A reversal which seems to change the sense of a sentence." },
-        { term: "Hyperbaton", def: "The deviation from ordinary word order." },
-        { term: "Hysteron-proteron", def: "The reversal of temporal order in a sentence." },
-        { term: "Inclusio", def: "Repetition of the beginning." },
-        { term: "Isocolon", def: "The repetition of grammatical forms." },
-        { term: "Metalepsis", def: "The double substitution of a word for a related word." },
-        { term: "Metaplasmus", def: "A purposeful misspelling." },
-        { term: "Metathesis", def: "The rearrangement of one or more letters in a word in an intentional misspelling." },
-        { term: "Metonymy", def: "The substitution of one word for another related word." },
-        { term: "Paradiastole", def: "The repetition of the disjunctives, 'neither' and 'nor' or 'either' and 'or'." },
-        { term: "Parenthesis", def: "Parenthetical addition by way of explanation." },
-        { term: "Periphrasis", def: "The substitution of more for fewer words." },
-        { term: "Pleonasm", def: "The addition of superfluous words." },
-        { term: "Ploce", def: "Repetition in a general and restricted sense." },
-        { term: "Polyptoton", def: "The repetition of the same word or root in different grammatical forms." },
-        { term: "Polysyndeton", def: "The repetition of the word 'and' at the beginning of successive phrases." },
-        { term: "Praecisio", def: "Simple silence." },
-        { term: "Proparalepsis", def: "The addition of letters to the end of a word in a purposeful misspelling." },
-        { term: "Prosthesis", def: "The addition of letters at the beginning of a word in a purposeful misspelling." },
-        { term: "Repetitio", def: "Irregular repetition of a word or phrase." },
-        { term: "Scesis onomaton", def: "The intentional omission of a verb." },
-        { term: "Syllepsis", def: "The yoking of a verb to more than one subject with a different meaning implied in reference to each subject." },
-        { term: "Symploce", def: "Repetition at the beginning and the end." },
-        { term: "Syncope", def: "The subtraction of letters from the middle of a word in an intentional misspelling." },
-        { term: "Synecdoche", def: "The substitution of a part for a whole." },
-        { term: "Tmesis", def: "Breaking a word in two, sometimes to put another word in the spot." },
-        { term: "Zeugma", def: "The yoking of a verb to more than one subject while grammatically it strictly refers to only one of them." }
+        { term: "Absolute ellipsis", def: "A phrase or sentence in which the omitted material is not betrayed by the words which remain.", example: "\"Et tu, Brute? ( Julius Caesar , Act III, Scene I, by Shakespeare)\"" },
+        { term: "Anadiplosis", def: "Repetition of an end at the next beginning.", example: "\"And I will luve thee still, my dear, / Till a' the seas gang dry. / Till a' the seas gang dry, my dear, / And the rocks melt wi' the sun. (\"\"A Red, Red Rose\"\" by Robert Burns)\"" },
+        { term: "Anaphora", def: "Repetition at the beginning.", example: "\"I never saw a moor, / I never saw the sea; / Yet know I how the heather looks, / And what a wave must be. (\"\"I Never Saw a Moor\"\" by Emily Dickinson)\"" },
+        { term: "Anapodoton", def: "The omission of one or more whole clauses which are not logically implied by the remaining text.", example: "As a matter of fact you needn't bother to ascertain. I ascertained. They're real. ( The Great Gatsby  by F. Scott Fitzgerald)" },
+        { term: "Anastrophe", def: "The reversal of word order.", example: "\"And moving through a mirror clear / That hangs before her all the year, / Shadows of the world appear. / There she sees the highway near / Winding down to Camelot. (\"\"The Lady of Shalott\"\" by Alfred, Lord Tennyson)\"" },
+        { term: "Antanaclasis", def: "Repetition in different senses.", example: "\"Let me give light, but let me not be light. ( The Merchant of Venice , Act V, Scene I, by Shakespeare)\"" },
+        { term: "Anthimeria", def: "The substitution of one part of speech for another.", example: "\"I would have such a fellow whipp'd for o'erdoing Termagant; it out-herods Herod. ( Hamlet , Act III, Scene II, by Shakespeare)\"" },
+        { term: "Antiptosis", def: "The substitution of a prepositional phrase for an adjective.", example: "\"This fair is no new-erected business, but a thing of ancient standing. ( Pilgrim's Progress  by John Bunyan)\"" },
+        { term: "Antisthecon", def: "The substitution of one or more letters in a word in an intentional misspelling.", example: "\"Oliver: Wilt thou lay hands on me, villain? / Orlando: I am no villein: I am the youngest son of Sir Roland de Boys. ( As You Like It , Act I, Scene I, by Shakespeare)\"" },
+        { term: "Antithesis", def: "The repetition of ideas by negation.", example: "\"Again, as yesterday, suddenly, without the least transition, he felt himself thrown down from the height of happiness, peace, dignity, into an abyss of despair, anger and humiliation. ( Anna Karenina  by Leo Tolstoy)\"" },
+        { term: "Aphaeresis", def: "The subtraction of letters from the beginning of a word in an intentional misspelling.", example: "\"Point against point rebellious, arm 'gainst arm, / Curbing his lavish spirit; and to conclude, / The victory fell on us. ( Macbeth , Act I, Scene II, by Shakespeare)\"" },
+        { term: "Apocope", def: "Subtraction of letters from the end of a word in an intentional misspelling.", example: "\"Last night of all, / When yond same star that's westward from the pole / Had made his course t' illume that part of heaven. ( Hamlet , Act I, Scene I, by Shakespeare)\"" },
+        { term: "Aporia", def: "To talk about not being able to talk about something.", example: "\"Not all the calculators of the National Debt can tell me the capacity for good or evil... for the decomposition of virtue into vice, or the reverse... ( Hard Times  by Charles Dickens)\"" },
+        { term: "Aposiopesis", def: "The intentional omission of the last part of a sentence or the last part of a thought.", example: "\"\"\"Really, now you ask me,\"\" said Alice, very much confused, \"\"I don't think—\"\" \"\"Then you shouldn't talk,\"\" said the Hatter. ( Alice's Adventures in Wonderland  by Lewis Carroll)\"" },
+        { term: "Asterismos", def: "The addition of a word to emphasize what follows.", example: "\"This the invisible police officer of the Fates, who has the constant surveillance of me, and secretly dogs me, and influences me in some unaccountable way—he can better answer than any one else. ( Moby Dick  by Herman Melville)\"" },
+        { term: "Asyndeton", def: "An omission of a conjunction.", example: "\"Jane could not take her eyes from her mother's hands. They had a way of doing things, peeling apples, sprinkling salt, counting pennies, that fascinated her. ( The Moffats  by Eleanor Estes)\"" },
+        { term: "Auxesis", def: "Arrangement in ascending order.", example: "\"Now could thou and I rob the thieves and go merrily to London, it would be argument for a week, laughter for a month, and a good jest forever. ( Henry IV, Part 1 , Act II, Scene II, by Shakespeare)\"" },
+        { term: "Catachresis", def: "An apparently inappropriate substitution of one word for another.", example: "\"I have supp'd full with horrors. ( Macbeth , Act V, Scene V, by Shakespeare)\"" },
+        { term: "Chiasmus", def: "Epanodos at the level of the passage.", example: "\"There was an old owl, who lived in an oak; The more he heard, the less he spoke. / The less he spoke, the more he heard. / Why aren't we all like that wise old bird! (\"\"A Wise Old Owl,\"\" Traditional Nursery Rhyme)\"" },
+        { term: "Congeries", def: "Repetition using other words.", example: "\"Why did I not die? More miserable than man ever was before, why did I not sink into forgetfulness and rest? ( Frankenstein  by Mary Shelley)\"" },
+        { term: "Diacope", def: "Repetition with only a word or two between.", example: "\"TRUE!—nervous—very, very dreadfully nervous I had been and am; but why will you say that I am mad? (\"\"The Tell-Tale Heart\"\" by Edgar Allan Poe)\"" },
+        { term: "Ellipsis", def: "The general name for the omission of one or more words.", example: "For 'twas the self-same Power divine / Taught you to sing and me to shine. ( The Nightingale and the Glow-worm  by William Cowper)" },
+        { term: "Enallage", def: "An exchange of words or a substitution of one for another.", example: "Ain't he played me tricks enough like that for me to be looking out for him by this time? But old fools is the biggest fools there is. ( The Adventures of Tom Sawyer  by Mark Twain)" },
+        { term: "Enthymeme", def: "An abbreviation of a syllogism, where one or more of the premises is missing.", example: "\"She was a large, impassive, heavy-featured woman with a stern, set expression of mouth... But her tell-tale eyes were red and glanced at me from between the swollen lids. ( The Hound of the Baskervilles  by Arthur Conan Doyle)\"" },
+        { term: "Epanalepsis", def: "Repetition of the beginning at the end.", example: "\"Nothing will come of nothing. ( King Lear , Act I, Scene I, by Shakespeare)\"" },
+        { term: "Epanodos", def: "Repetition in reverse order.", example: "\"If love be rough with you, be rough with love. ( Romeo and Juliet , Act I, Scene IV, by Shakespeare)\"" },
+        { term: "Epanorthosis", def: "Addition by correction.", example: "\"I still fall short of it through my own fault, and through not observing the admonitions of the gods, and, I may almost say, their direct instructions. ( Meditations  by Marcus Aurelius)\"" },
+        { term: "Epenthesis", def: "The addition of letters in the middle of the word in a purposeful misspelling.", example: "\"\"\"Here's a rahm,\"\" he said, at last... \"\"It's weel eneugh tuh ate a few porridge in.\"\" ( Wuthering Heights  by Emily Brontë)\"" },
+        { term: "Epistrophe", def: "Repetition at the end.", example: "\"Little lamb, who made thee? / Dost thou know who made thee? (\"\"The Lamb\"\" by William Blake)\"" },
+        { term: "Epizeuxis", def: "Immediate repetition.", example: "\"But who comes here? / My father, poorly led? World, world, O world! ( King Lear , Act IV, Scene I, by Shakespeare)\"" },
+        { term: "Gradatio", def: "Repeated repetition of an end at the next beginning.", example: "\"O, Topsy, poor child, I love you! ... I love you, because you haven't had any father, or mother, or friends;—because you've been a poor, abused child! ( Uncle Tom's Cabin  by Harriet Beecher Stowe)\"" },
+        { term: "Hendiadys", def: "Two or more words used, but one meaning intended.", example: "\"Go, soar with Plato to th' empyreal sphere, / To the first good, first perfect, and first fair. (\"\"An Essay on Man\"\" by Alexander Pope)\"" },
+        { term: "Hypallage", def: "A reversal which seems to change the sense of a sentence.", example: "\"And our hearts, though stout and brave, / Still, like muffled drums, are beating / Funeral marches to the grave. (\"\"A Psalm of Life\"\" by Henry Wadsworth Longfellow)\"" },
+        { term: "Hyperbaton", def: "The deviation from ordinary word order.", example: "\"Heaven and earth help him who plants a tree, / And his work its own reward shall be. (\"\"Plant a Tree\"\" by Lucy Larcom)\"" },
+        { term: "Hysteron-proteron", def: "The reversal of temporal order in a sentence.", example: "Let us die. Let us rush into the thick of the fighting. ( The Aeneid  by Virgil)" },
+        { term: "Inclusio", def: "Repetition of the beginning.", example: "\"What is the matter with Mary Jane? / She's crying with all her might and main, / And she won't eat her dinner—rice pudding again— / What is the matter with Mary Jane? (\"\"Rice Pudding\"\" by A. A. Milne)\"" },
+        { term: "Isocolon", def: "The repetition of grammatical forms.", example: "\"And this our life exempt from public haunt / Finds tongues in trees, books in the running brooks, / Sermons in stones, and good in everything. ( As You Like It , Act II, Scene I, by Shakespeare)\"" },
+        { term: "Metalepsis", def: "The double substitution of a word for a related word.", example: "\"Was this the face that launched a thousand ships, / And burnt the topless towers of Ilium? ( Doctor Faustus  by Christopher Marlowe)\"" },
+        { term: "Metaplasmus", def: "A purposeful misspelling.", example: "(General term for intentional spelling variations)" },
+        { term: "Metathesis", def: "The rearrangement of one or more letters in a word in an intentional misspelling.", example: "\"Tell us some moral thing, that we may lere / Some wit, and then will we gladly hear. ( The Canterbury Tales  by Geoffrey Chaucer)\"" },
+        { term: "Metonymy", def: "The substitution of one word for another related word.", example: "\"I sing of arms and of the man, fated to be an exile. ( The Aeneid  by Virgil)\"" },
+        { term: "Paradiastole", def: "The repetition of the disjunctives, \"neither\" and \"nor\" or \"either\" and \"or\".", example: "\"For the world, which seems / To lie before us like a land of dreams... Hath really neither joy, nor love, nor light, / Nor certitude, nor peace, nor help for pain. (\"\"Dover Beach\"\" by Matthew Arnold)\"" },
+        { term: "Parenthesis", def: "Parenthetical addition by way of explanation.", example: "\"This is a story of how a Baggins had an adventure, and found himself doing and saying things altogether unexpected. ( The Hobbit  by J. R. R. Tolkien)\"" },
+        { term: "Periphrasis", def: "The substitution of more for fewer words.", example: "\"Euphorbus was drawing back, and Menelaus struck him about the roots of his throat... the point went clean through his neck. ( The Iliad  by Homer)\"" },
+        { term: "Pleonasm", def: "The addition of superfluous words.", example: "\"I saw the wound, I saw it with mine eyes. ( Romeo and Juliet , Act III, Scene II, by Shakespeare)\"" },
+        { term: "Ploce", def: "Repetition in a general and restricted sense.", example: "The world of books is still the world. ( Aurora Leigh  by Elizabeth Barrett Browning)" },
+        { term: "Polyptoton", def: "The repetition of the same word or root in different grammatical forms.", example: "\"One short sleep past, we wake eternally / And death shall be no more; Death, thou shalt die. (\"\"Death Be Not Proud\"\" by John Donne)\"" },
+        { term: "Polysyndeton", def: "The repetition of the word \"and\" at the beginning of successive phrases.", example: "\"Near them, on the sand, / Half sunk, a shattered visage lies, whose frown, / And wrinkled lip, and sneer of cold command... (\"\"Ozymandias\"\" by Percy Bysshe Shelley)\"" },
+        { term: "Praecisio", def: "Simple silence.", example: "(The act of breaking off mid-speech)" },
+        { term: "Proparalepsis", def: "The addition of letters to the end of a word in a purposeful misspelling.", example: "\"The fates / And prologue to the omen coming on, / Have heaven and earth together demonstrated / Unto our climatures and countrymen. ( Hamlet , Act I, Scene I, by Shakespeare)\"" },
+        { term: "Prosthesis", def: "The addition of letters at the beginning of a word in a purposeful misspelling.", example: "\"O what a world is this when what is comely / Envenoms him that bears it! ( As You Like It , Act II, Scene III, by Shakespeare)\"" },
+        { term: "Repetitio", def: "Irregular repetition of a word or phrase.", example: "\"A stony business altogether, with heavy stone balustrades, and stone urns, and stone flowers... ( A Tale of Two Cities  by Charles Dickens)\"" },
+        { term: "Scesis onomaton", def: "The intentional omission of a verb.", example: "\"The apparition of these faces in the crowd: / Petals on a wet, black bough. (\"\"In a Station of the Metro\"\" by Ezra Pound)\"" },
+        { term: "Syllepsis", def: "The yoking of a verb to more than one subject with a different meaning implied in reference to each subject.", example: "Yet time and her aunt moved slowly—and her patience and her ideas were nearly worn out before the tete-a-tete was over. ( Pride and Prejudice  by Jane Austen)" },
+        { term: "Symploce", def: "Repetition at the beginning and the end.", example: "\"Facts alone are wanted in life ... This is the principle on which I bring up my own children, and this is the principle on which I bring up these children. ( Hard Times  by Charles Dickens)\"" },
+        { term: "Syncope", def: "The subtraction of letters from the middle of a word in an intentional misspelling.", example: "\"A wretched ragged man, o'ergrown with hair, / Lay sleeping on his back. ( As You Like It , Act IV, Scene III, by Shakespeare)\"" },
+        { term: "Synecdoche", def: "The substitution of a part for a whole.", example: "\"Ten thousand eyes were on him as he rubbed his hands with dirt; / Five thousand tongues applauded when he wiped them on his shirt. (\"\"Casey at the Bat\"\" by Ernest Lawrence Thayer)\"" },
+        { term: "Tmesis", def: "Breaking a word in two, sometimes to put another word in the spot.", example: "\"This is not Romeo, he's some other where. ( Romeo and Juliet , Act I, Scene I, by Shakespeare)\"" },
+        { term: "Zeugma", def: "The yoking of a verb to more than one subject while grammatically it strictly refers to only one of them.", example: "\"The aim of a ship's captain is a successful voyage; a doctor's, health; a general's, victory. ( The Republic  by Cicero)\"" }
     ];
 
     let currentIndex = 0;
@@ -480,7 +485,7 @@
     let currentTab = 'learn';
     let lastWrongAnswer = "";
 
-    const cacheKey = 'rhetoric_flashcard_progress_v6';
+    const cacheKey = 'rhetoric_flashcard_progress_v7';
 
     // DOM Elements
     const cardFrontText = document.getElementById('card-front-text');
@@ -505,11 +510,13 @@
 
     const cardView = document.getElementById('card-view');
     const statsView = document.getElementById('stats-view');
+    const listView = document.getElementById('list-view');
     const historyTableBody = document.getElementById('history-table-body');
 
     const tabLearn = document.getElementById('tab-learn');
     const tabTest = document.getElementById('tab-test');
     const tabStats = document.getElementById('tab-stats');
+    const tabList = document.getElementById('tab-list');
 
     function init() {
         loadProgress();
@@ -575,7 +582,6 @@
                 if (importedData && importedData.stats) {
                     localStorage.setItem(cacheKey, JSON.stringify(importedData));
                     alert("Data imported successfully!");
-                    // Re-initialize app with new data
                     init();
                     if (currentTab === 'stats') populateHistoryTable();
                 } else {
@@ -586,7 +592,7 @@
             }
         };
         reader.readAsText(file);
-        event.target.value = ''; // Reset input
+        event.target.value = ''; 
     }
 
     function resetSession() {
@@ -609,15 +615,18 @@
         }
     }
 
+    // --- Tab Management ---
     function switchTab(tabId) {
         currentTab = tabId;
         
         tabLearn.classList.remove('active');
         tabTest.classList.remove('active');
         tabStats.classList.remove('active');
+        tabList.classList.remove('active');
 
         cardView.style.display = 'none';
         statsView.style.display = 'none';
+        listView.style.display = 'none';
         learnControls.style.display = 'none';
         testControls.style.display = 'none';
 
@@ -625,23 +634,27 @@
             tabLearn.classList.add('active');
             cardView.style.display = 'flex';
             learnControls.style.display = 'flex';
-            cardContainer.style.pointerEvents = 'auto'; // allow flipping
+            cardContainer.style.pointerEvents = 'auto'; 
             flipHint.style.display = 'block';
         } else if (tabId === 'test') {
             tabTest.classList.add('active');
             cardView.style.display = 'flex';
             testControls.style.display = 'block';
-            cardContainer.style.pointerEvents = 'none'; // disable flipping
+            cardContainer.style.pointerEvents = 'none'; 
             flipHint.style.display = 'none';
             resetTestUI();
         } else if (tabId === 'stats') {
             tabStats.classList.add('active');
             statsView.style.display = 'block';
             populateHistoryTable();
+        } else if (tabId === 'list') {
+            tabList.classList.add('active');
+            listView.style.display = 'flex';
+            populateListView();
         }
 
         saveProgress();
-        if(tabId !== 'stats') updateUI();
+        if(tabId === 'learn' || tabId === 'test') updateUI();
     }
 
     function setCardDirection() {
@@ -924,6 +937,21 @@
                 <td class="table-section-border" style="text-align: center;">${accuracy}</td>
             `;
             historyTableBody.appendChild(tr);
+        });
+    }
+
+    // --- List View Rendering ---
+    function populateListView() {
+        listView.innerHTML = '';
+        flashcards.forEach(card => {
+            const el = document.createElement('div');
+            el.className = 'list-card';
+            el.innerHTML = `
+                <div class="list-term">${card.term}</div>
+                <div class="list-def">${card.def}</div>
+                <div class="list-ex"><strong>Example:</strong> ${card.example}</div>
+            `;
+            listView.appendChild(el);
         });
     }
 
