@@ -48,10 +48,10 @@
             padding: 30px;
             box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
             width: 100%;
-            max-width: 600px;
+            max-width: 700px;
             text-align: center;
             position: relative;
-            max-height: 90vh;
+            max-height: 95vh;
             display: flex;
             flex-direction: column;
         }
@@ -179,7 +179,7 @@
             font-size: 14px;
         }
         th, td {
-            padding: 10px;
+            padding: 8px 10px;
             border-bottom: 1px solid var(--glass-border);
         }
         th {
@@ -191,12 +191,13 @@
         }
         .correct-col { color: #a8ffb2; text-align: center; }
         .wrong-col { color: #ffb2b2; text-align: center; }
+        .table-section-border { border-left: 1px solid var(--glass-border); }
 
         /* Card Flip Animation */
         .card-container {
             perspective: 1000px;
             width: 100%;
-            height: 250px;
+            height: 260px;
             margin-bottom: 30px;
             cursor: pointer;
         }
@@ -254,14 +255,17 @@
             bottom: 10px;
             font-size: 12px;
             background: rgba(0, 0, 0, 0.3);
-            padding: 4px 10px;
+            padding: 6px 15px;
             border-radius: 10px;
             display: flex;
-            gap: 10px;
+            flex-direction: column;
+            gap: 4px;
+            align-items: center;
         }
 
-        .stat-c { color: #a8ffb2; }
-        .stat-w { color: #ffb2b2; }
+        .stat-label { color: rgba(255, 255, 255, 0.6); }
+        .stat-c { color: #a8ffb2; font-weight: bold; }
+        .stat-w { color: #ffb2b2; font-weight: bold; }
 
         /* Test Mode UI */
         #test-controls {
@@ -347,8 +351,8 @@
         </header>
 
         <div class="tabs">
-            <div class="tab active" id="tab-learn" onclick="switchTab('learn')">Learn</div>
-            <div class="tab" id="tab-test" onclick="switchTab('test')">Test</div>
+            <div class="tab active" id="tab-learn" onclick="switchTab('learn')">Learn (Cards)</div>
+            <div class="tab" id="tab-test" onclick="switchTab('test')">Test (Typing)</div>
             <div class="tab" id="tab-stats" onclick="switchTab('stats')">Statistics</div>
         </div>
 
@@ -366,17 +370,18 @@
                     <div class="card-face card-front">
                         <div class="mastery-badge">⭐ Mastered</div>
                         <span id="card-front-text" style="width: 100%; text-align: center;">Front</span>
+                        
                         <div class="card-history-stats" id="card-front-stats">
-                            <span class="stat-c">Correct: 0</span> | <span class="stat-w">Wrong: 0</span>
-                        </div>
+                            </div>
+
                         <div style="position: absolute; top: 10px; left: 15px; font-size: 12px; color: rgba(255,255,255,0.5);">Click to flip</div>
                     </div>
                     <div class="card-face card-back">
                         <div class="mastery-badge">⭐ Mastered</div>
                         <span id="card-back-text" style="width: 100%; text-align: center;">Back</span>
+                        
                         <div class="card-history-stats" id="card-back-stats">
-                            <span class="stat-c">Correct: 0</span> | <span class="stat-w">Wrong: 0</span>
-                        </div>
+                            </div>
                     </div>
                 </div>
             </div>
@@ -388,7 +393,7 @@
             </div>
 
             <div id="test-controls">
-                <input type="text" id="test-input" placeholder="Type your answer here..." onkeypress="handleEnter(event)">
+                <input type="text" id="test-input" placeholder="Type your answer here..." autocomplete="off" onkeypress="handleEnter(event)">
                 <div id="test-feedback"></div>
                 <button class="controls button" onclick="checkAnswer()" style="width: 100%; padding: 15px;">Submit Answer</button>
             </div>
@@ -398,10 +403,16 @@
             <table>
                 <thead>
                     <tr>
-                        <th>Term</th>
-                        <th class="correct-col">Correct</th>
-                        <th class="wrong-col">Wrong</th>
-                        <th>Accuracy</th>
+                        <th rowspan="2" style="vertical-align: bottom; text-align: left;">Term</th>
+                        <th colspan="2" class="table-section-border" style="text-align: center;">Learn Mode</th>
+                        <th colspan="2" class="table-section-border" style="text-align: center;">Test Mode</th>
+                        <th rowspan="2" class="table-section-border" style="vertical-align: bottom; text-align: center;">Total<br>Accuracy</th>
+                    </tr>
+                    <tr>
+                        <th class="correct-col table-section-border" style="font-size: 11px; top: 38px;">Correct</th>
+                        <th class="wrong-col" style="font-size: 11px; top: 38px;">Wrong</th>
+                        <th class="correct-col table-section-border" style="font-size: 11px; top: 38px;">Correct</th>
+                        <th class="wrong-col" style="font-size: 11px; top: 38px;">Wrong</th>
                     </tr>
                 </thead>
                 <tbody id="history-table-body">
@@ -480,7 +491,7 @@
     let wordStats = {}; 
     let currentTab = 'learn';
 
-    const cacheKey = 'rhetoric_flashcard_progress_v4';
+    const cacheKey = 'rhetoric_flashcard_progress_v5'; // Updated cache key for separated stats
 
     // DOM Elements
     const cardFrontText = document.getElementById('card-front-text');
@@ -505,7 +516,6 @@
     const statsView = document.getElementById('stats-view');
     const historyTableBody = document.getElementById('history-table-body');
 
-    // Tab Elements
     const tabLearn = document.getElementById('tab-learn');
     const tabTest = document.getElementById('tab-test');
     const tabStats = document.getElementById('tab-stats');
@@ -580,7 +590,7 @@
             tabTest.classList.add('active');
             cardView.style.display = 'flex';
             testControls.style.display = 'block';
-            cardContainer.style.pointerEvents = 'none'; // disable flipping to prevent cheating
+            cardContainer.style.pointerEvents = 'none'; // disable flipping
             testInput.value = '';
             testFeedback.textContent = '';
             setTimeout(() => testInput.focus(), 50);
@@ -602,6 +612,22 @@
         }
     }
 
+    function ensureStats(term) {
+        if (!wordStats[term]) {
+            wordStats[term] = {
+                learn: { correct: 0, wrong: 0 },
+                test: { correct: 0, wrong: 0 }
+            };
+        }
+        // Migration from old combined cache structures
+        if (wordStats[term].correct !== undefined) {
+            wordStats[term] = {
+                learn: { correct: wordStats[term].correct, wrong: wordStats[term].wrong },
+                test: { correct: 0, wrong: 0 }
+            };
+        }
+    }
+
     function updateUI() {
         flashcard.classList.remove('is-flipped');
         const card = flashcards[currentIndex];
@@ -609,12 +635,18 @@
         cardFrontText.textContent = currentIsTermToDef ? card.term : card.def;
         cardBackText.textContent = currentIsTermToDef ? card.def : card.term;
 
-        const stats = wordStats[card.term] || { correct: 0, wrong: 0 };
-        const statHTML = `<span class="stat-c">Correct: ${stats.correct}</span> | <span class="stat-w">Wrong: ${stats.wrong}</span>`;
+        ensureStats(card.term);
+        const stats = wordStats[card.term];
+
+        const statHTML = `
+            <div><span class="stat-label">Learn:</span> <span class="stat-c">${stats.learn.correct}</span> &nbsp;|&nbsp; <span class="stat-w">${stats.learn.wrong}</span></div>
+            <div><span class="stat-label">Test:</span> <span class="stat-c">${stats.test.correct}</span> &nbsp;|&nbsp; <span class="stat-w">${stats.test.wrong}</span></div>
+        `;
         cardFrontStats.innerHTML = statHTML;
         cardBackStats.innerHTML = statHTML;
 
-        const isMastered = stats.correct > 0;
+        // Mastery relies on having at least 1 correct answer in EITHER mode
+        const isMastered = (stats.learn.correct + stats.test.correct) > 0;
         badges.forEach(badge => {
             badge.style.display = isMastered ? 'block' : 'none';
         });
@@ -625,7 +657,8 @@
         
         let masteredCount = 0;
         for (const term in wordStats) {
-            if (wordStats[term].correct > 0) masteredCount++;
+            ensureStats(term);
+            if ((wordStats[term].learn.correct + wordStats[term].test.correct) > 0) masteredCount++;
         }
         masteryText.innerHTML = `Mastered: <span class="stats-highlight">${masteredCount}</span> / ${flashcards.length}`;
 
@@ -654,14 +687,10 @@
     }
 
     // --- Learn Mode Self-Grading ---
-    function ensureStats(term) {
-        if (!wordStats[term]) wordStats[term] = { correct: 0, wrong: 0 };
-    }
-
     function markCorrect() {
         const term = flashcards[currentIndex].term;
         ensureStats(term);
-        wordStats[term].correct++;
+        wordStats[term].learn.correct++;
         saveProgress();
         nextCard();
     }
@@ -669,13 +698,12 @@
     function markWrong() {
         const term = flashcards[currentIndex].term;
         ensureStats(term);
-        wordStats[term].wrong++;
+        wordStats[term].learn.wrong++;
         saveProgress();
         nextCard();
     }
 
     function skipCard() {
-        // Skips without recording a stat
         nextCard();
     }
 
@@ -697,7 +725,8 @@
         if (cleanUser === cleanCorrect || (cleanCorrect.includes(cleanUser) && cleanUser.length > 4)) {
             testFeedback.style.color = '#a8ffb2';
             testFeedback.textContent = "Correct!";
-            wordStats[card.term].correct++;
+            wordStats[card.term].test.correct++;
+            
             flashcard.classList.add('is-flipped');
             setTimeout(() => {
                 nextCard();
@@ -708,12 +737,19 @@
         } else {
             testFeedback.style.color = '#ffb2b2';
             testFeedback.textContent = `Incorrect. The answer is: ${correctAnswer}`;
-            wordStats[card.term].wrong++;
+            wordStats[card.term].test.wrong++;
+            
             flashcard.classList.add('is-flipped');
         }
         
         saveProgress();
-        const statHTML = `<span class="stat-c">Correct: ${wordStats[card.term].correct}</span> | <span class="stat-w">Wrong: ${wordStats[card.term].wrong}</span>`;
+        
+        // Refresh card stats immediately
+        const stats = wordStats[card.term];
+        const statHTML = `
+            <div><span class="stat-label">Learn:</span> <span class="stat-c">${stats.learn.correct}</span> &nbsp;|&nbsp; <span class="stat-w">${stats.learn.wrong}</span></div>
+            <div><span class="stat-label">Test:</span> <span class="stat-c">${stats.test.correct}</span> &nbsp;|&nbsp; <span class="stat-w">${stats.test.wrong}</span></div>
+        `;
         cardFrontStats.innerHTML = statHTML;
         cardBackStats.innerHTML = statHTML;
     }
@@ -722,11 +758,15 @@
     function populateHistoryTable() {
         historyTableBody.innerHTML = '';
         flashcards.forEach(card => {
-            const stats = wordStats[card.term] || { correct: 0, wrong: 0 };
-            const total = stats.correct + stats.wrong;
+            ensureStats(card.term);
+            const stats = wordStats[card.term];
+            
+            const totalAttempts = stats.learn.correct + stats.learn.wrong + stats.test.correct + stats.test.wrong;
+            const totalCorrect = stats.learn.correct + stats.test.correct;
+            
             let accuracy = "0%";
-            if (total > 0) {
-                accuracy = Math.round((stats.correct / total) * 100) + "%";
+            if (totalAttempts > 0) {
+                accuracy = Math.round((totalCorrect / totalAttempts) * 100) + "%";
             } else {
                 accuracy = "-";
             }
@@ -734,9 +774,11 @@
             const tr = document.createElement('tr');
             tr.innerHTML = `
                 <td><strong>${card.term}</strong></td>
-                <td class="correct-col">${stats.correct}</td>
-                <td class="wrong-col">${stats.wrong}</td>
-                <td style="text-align: center;">${accuracy}</td>
+                <td class="correct-col table-section-border">${stats.learn.correct}</td>
+                <td class="wrong-col">${stats.learn.wrong}</td>
+                <td class="correct-col table-section-border">${stats.test.correct}</td>
+                <td class="wrong-col">${stats.test.wrong}</td>
+                <td class="table-section-border" style="text-align: center;">${accuracy}</td>
             `;
             historyTableBody.appendChild(tr);
         });
